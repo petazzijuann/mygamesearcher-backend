@@ -362,3 +362,39 @@
 | `DELETE /juegos/1` y después `GET /colecciones/1` | `204`, y la colección queda sin ese juego |
 | `DELETE /plataformas/1` (favorita del usuario 1, sin juegos que la usen) y después `GET /usuarios/1` | `204`, y el usuario queda con `"plataforma": null` |
 | `DELETE /colecciones/1` | `204` sin contenido |
+
+## Paso 8 - Listado de juegos filtrado por título y detalle (2026-10-06)
+
+**Qué se hizo:** Se agregó al listado de juegos un filtro opcional por título (`GET /juegos?titulo=...`), que busca coincidencias parciales sin distinguir mayúsculas. El detalle (`GET /juegos/:id`, con clasificación, plataformas, géneros y características) ya existía desde el Paso 6.
+
+**Cómo se hizo:**
+- Rama `feature/listado-juegos` creada desde `dev`.
+- `src/juego/dto/filtro-juegos.dto.ts` (nuevo): valida el query `titulo` (opcional, texto, sin espacios en los extremos, hasta 100 caracteres).
+- `src/juego/juego.service.ts`: `listar(titulo?)` filtra con `ILike('%texto%')` cuando el título no está vacío. Se agregó la función `escaparComodines`.
+- `src/juego/juego.controller.ts`: `GET /juegos` recibe el filtro con `@Query()` y se lo pasa al service.
+
+**Por qué:**
+- `ILIKE '%texto%'` de PostgreSQL: busca el texto en cualquier parte del título y sin distinguir mayúsculas, que es lo que espera un usuario que escribe parte del nombre ("elden", "SOULS", "den ri").
+- Se escapan `%`, `_` y `\`: en `ILIKE` son comodines y carácter de escape. Sin escaparlos, buscar "%" devolvería todos los juegos y "_" cualquier título con al menos un carácter.
+- Un título vacío o con solo espacios equivale a no filtrar: el `trim` del DTO lo deja vacío y el service no agrega condición.
+- Si no hay coincidencias se responde `200` con `[]` y no `404`: una búsqueda sin resultados no es un error, y así el frontend no tiene que tratarla como uno.
+- Si el query se repite (`?titulo=a&titulo=b`), Express arma una lista y el DTO la rechaza con `400`.
+- Pendiente como posible mejora: la búsqueda distingue tildes ("accion" no encuentra "Acción"). Para ignorarlas habría que activar la extensión `unaccent` de PostgreSQL en Supabase.
+
+**Requisito del TP que cubre:** Listado de juegos filtrado por nombre y detalle del juego (regularidad).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`) y los juegos "Elden Ring", "Dark Souls", "100% Orange Juice" y "Super_Hot" cargados:
+
+| Request | Respuesta esperada |
+|---|---|
+| `GET /juegos` | `200` con los 4 juegos ordenados por título |
+| `GET /juegos?titulo=elden` | `200` con solo "Elden Ring" |
+| `GET /juegos?titulo=SOULS` | `200` con solo "Dark Souls" |
+| `GET /juegos?titulo=den ri` | `200` con solo "Elden Ring" |
+| `GET /juegos?titulo=zelda` | `200` `[]` |
+| `GET /juegos?titulo=%25` (el carácter `%`) | `200` con solo "100% Orange Juice" |
+| `GET /juegos?titulo=_` | `200` con solo "Super_Hot" |
+| `GET /juegos?titulo=` | `200` con los 4 juegos |
+| `GET /juegos?titulo=a&titulo=b` | `400` `["El título a buscar debe ser un texto"]` |
+| `GET /juegos?titulo=` con 101 caracteres | `400` `["El título a buscar no puede superar los 100 caracteres"]` |
+| `GET /juegos/1` | `200` con el juego, su clasificación de edad, plataformas, géneros y características |

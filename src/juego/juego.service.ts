@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Caracteristica } from '../caracteristica/caracteristica.entity';
 import { ClasificacionEdad } from '../clasificacion-edad/clasificacion-edad.entity';
 import { buscarPorIds } from '../comun/buscar-por-ids';
@@ -22,6 +22,10 @@ const RELACIONES = {
   generos: true,
   caracteristicas: true,
 };
+
+// En ILIKE, % y _ son comodines y \ es el carácter de escape:
+// se escapan para buscar el texto tal cual lo escribió el usuario
+const escaparComodines = (texto: string) => texto.replace(/[\\%_]/g, '\\$&');
 
 @Injectable()
 export class JuegoService {
@@ -69,8 +73,10 @@ export class JuegoService {
     return this.juegoRepository.save(juego);
   }
 
-  listar(): Promise<Juego[]> {
+  // Con titulo, busca juegos que lo contengan en cualquier parte, sin distinguir mayúsculas
+  listar(titulo?: string): Promise<Juego[]> {
     return this.juegoRepository.find({
+      where: titulo ? { titulo: ILike(`%${escaparComodines(titulo)}%`) } : {},
       relations: RELACIONES,
       order: { titulo: 'ASC' },
     });

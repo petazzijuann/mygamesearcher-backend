@@ -8,10 +8,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { idPipe } from '../comun/id.pipe';
 import { ActualizarJuegoDto } from './dto/actualizar-juego.dto';
 import { CrearJuegoDto } from './dto/crear-juego.dto';
+import { FiltroJuegosDto } from './dto/filtro-juegos.dto';
 import { JuegoService } from './juego.service';
 
 @Controller('juegos')
@@ -24,8 +26,8 @@ export class JuegoController {
   }
 
   @Get()
-  listar() {
-    return this.juegoService.listar();
+  listar(@Query() filtro: FiltroJuegosDto) {
+    return this.juegoService.listar(filtro.titulo);
   }
 
   @Get(':id')
