@@ -10,6 +10,7 @@ import { ClasificacionEdadModule } from './clasificacion-edad/clasificacion-edad
 import { JuegoModule } from './juego/juego.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { ColeccionModule } from './coleccion/coleccion.module';
+import { JuegoGuardadoModule } from './juego-guardado/juego-guardado.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ColeccionModule } from './coleccion/coleccion.module';
     JuegoModule,
     UsuarioModule,
     ColeccionModule,
+    JuegoGuardadoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

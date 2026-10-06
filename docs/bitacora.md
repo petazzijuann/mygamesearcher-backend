@@ -251,7 +251,7 @@
 - Borrado de catálogos en uso: se eligió bloquearlo con `409` en vez de quitar el dato de los juegos sin avisar. TypeORM crea las tablas intermedias con borrado en cascada salvo que la relación inversa defina otro `onDelete`, por eso se declararon las relaciones inversas con `RESTRICT`.
 - `persistence: false` en esas relaciones: durante las pruebas, borrar un género en uso respondía `204` y el juego se quedaba sin género. La causa es que `repository.remove()` borra por su cuenta las filas de la tabla intermedia antes del `DELETE` (lo hace `ManyToManySubjectBuilder.buildForAllRemoval` de TypeORM), y entonces el `RESTRICT` nunca llega a actuar. Con `persistence: false` TypeORM no toca la tabla intermedia desde el lado del catálogo y PostgreSQL bloquea el borrado.
 - Filtro global en vez de validar en cada service: los catálogos no conocen a Juego (ni a las entidades que vendrán, como Recomendación o Colección), así que el lugar natural para detectar "está en uso" es la restricción de la base. El filtro lo traduce una sola vez para todos los módulos.
-- Código `23502`: `PartialType` marca los campos con `@IsOptional()`, que también deja pasar `null` sin validar. Antes, un `PATCH /generos/1` con `{"nombre": null}` respondía `500`; ahora responde `400`. En Juego, los `null` en `clasificacionEdadId`, `plataformaIds` y `generoIds` se controlan en el service, porque TypeORM ignora un `null` dentro de un `where` y podría devolver un registro cualquiera.
+- Código `23502`: `PartialType` marca los campos con `@IsOptional()`, que también deja pasar `null` sin validar. Antes, un `PATCH /generos/1` con `{"nombre": null}` respondía `500`; ahora responde `400`. En Juego, los `null` en `clasificacionEdadId`, `plataformaIds` y `generoIds` se controlan en el service, porque en TypeORM 1.0 un `null` dentro de un `where` produce un error, que llegaría como `500`; así se responde `400` con un mensaje claro. (Corregido en el Paso 9: antes decía que TypeORM ignoraba el `null`.)
 
 **Requisito del TP que cubre:** CRUD dependiente de Juego (regularidad), que depende de los cuatro CRUDs simples anteriores, con relaciones N a 1 y N a N, validación de entrada y manejo de errores mediante códigos HTTP.
 
@@ -398,3 +398,60 @@
 | `GET /juegos?titulo=a&titulo=b` | `400` `["El título a buscar debe ser un texto"]` |
 | `GET /juegos?titulo=` con 101 caracteres | `400` `["El título a buscar no puede superar los 100 caracteres"]` |
 | `GET /juegos/1` | `200` con el juego, su clasificación de edad, plataformas, géneros y características |
+
+## Paso 9 - CUU Administrar biblioteca personal (2026-10-06)
+
+**Qué se hizo:** Caso de uso de la biblioteca personal: el usuario guarda juegos marcándolos como `ME_INTERESA` o `YA_JUGADO`, les cambia el estado, los quita y consulta su biblioteca (completa o filtrada por estado). Es la base para que la recomendación del Paso 10 no sugiera juegos ya jugados.
+
+**Cómo se hizo:**
+- Rama `feature/biblioteca` creada desde `dev`.
+- Archivos nuevos en `src/juego-guardado/` (el módulo lleva el nombre de la clase de negocio; la ruta, el del caso de uso):
+  - `estado-juego.enum.ts`: enum `EstadoJuego` (`ME_INTERESA`, `YA_JUGADO`).
+  - `juego-guardado.entity.ts`: tabla `juego_guardado` con clave primaria compuesta (`usuario_id`, `juego_id`), ambas también claves foráneas con `ON DELETE CASCADE`, `estado` (enum de Postgres) y `fecha` (`timestamptz`, `@UpdateDateColumn`).
+  - `dto/guardar-juego.dto.ts`: `usuarioId`, `juegoId` y `estado`, obligatorios.
+  - `dto/cambiar-estado.dto.ts`: `PickType(GuardarJuegoDto, ['usuarioId', 'estado'])`.
+  - `dto/usuario-query.dto.ts`: `usuarioId` obligatorio por query string, convertido a número con `@Type(() => Number)`.
+  - `dto/filtro-biblioteca.dto.ts`: extiende el anterior y agrega `estado` opcional.
+  - `juego-guardado.service.ts`: `listar`, `guardar`, `cambiarEstado`, `quitar` y el privado `buscarGuardado`.
+  - `juego-guardado.controller.ts`: rutas en `/biblioteca`.
+  - `juego-guardado.module.ts`: registra `JuegoGuardado`, `Usuario` y `Juego` con `TypeOrmModule.forFeature`.
+- `src/app.module.ts`: se importó `JuegoGuardadoModule`.
+- `docs/bitacora.md`: se corrigió una explicación del Paso 6 sobre el manejo de `null` en TypeORM (ver abajo).
+- Después de las pruebas se borraron los datos y se reiniciaron las secuencias de ids.
+
+**Por qué:**
+- Clave primaria compuesta (`usuario_id`, `juego_id`): la base garantiza que un juego aparezca una sola vez en la biblioteca de cada usuario. Se mapean las columnas dos veces (`usuarioId` como número y `usuario` como relación) para poder buscar por la clave sin cargar el usuario.
+- `POST` para guardar y `PATCH` para cambiar el estado, separados: sigue el mismo esquema que los CRUDs. El `POST` responde `409` si el juego ya estaba y el `PATCH` `404` si no estaba. Se descartó un único `PUT` que guardara o actualizara.
+- `fecha` es la del último cambio de estado (`@UpdateDateColumn`): indica desde cuándo el juego está en ese estado, por ejemplo cuándo se marcó como jugado. Si se manda el mismo estado que ya tenía, TypeORM no ejecuta el `UPDATE` y la fecha no cambia. El listado se ordena de la fecha más reciente a la más vieja.
+- Códigos de error: si el usuario o el juego no existen y vienen en el body (`POST`), es `400`. Si el usuario del listado no existe, `404`. En `PATCH` y `DELETE` se busca directamente la fila: si no está (por el motivo que sea), `404` "El juego no está en la biblioteca del usuario".
+- `usuarioId` por query string en `GET` y `DELETE` (esas requests no llevan body) y en el body en `POST` y `PATCH`. Igual que en Colección, es temporal hasta el login.
+- Si se borra un usuario o un juego, sus filas de la biblioteca se borran en cascada. No se declararon relaciones inversas en `Usuario` ni en `Juego`, para que el borrado lo resuelva PostgreSQL (ver Paso 6).
+- TypeORM 1.0 produce un error si una condición del `where` vale `undefined` o `null` (en versiones anteriores la ignoraba). Por eso el filtro por estado se agrega al `where` solo cuando viene en el pedido. Al revisarlo se encontró que la explicación del Paso 6 sobre este tema era incorrecta y se corrigió.
+
+**Requisito del TP que cubre:** CUU Administrar biblioteca personal (regularidad).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), dos usuarios (1 y 2) y tres juegos (1, 2 y 3) cargados:
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /biblioteca` `{"usuarioId": 1, "juegoId": 1, "estado": "ME_INTERESA"}` | `201` con `usuarioId`, `juegoId`, `estado`, `fecha` y el juego con su clasificación de edad |
+| `POST /biblioteca` `{"usuarioId": 1, "juegoId": 2, "estado": "YA_JUGADO"}` | `201` |
+| `POST /biblioteca` `{"usuarioId": 1, "juegoId": 1, "estado": "YA_JUGADO"}` | `409` `"El juego ya está en la biblioteca del usuario"` |
+| `POST /biblioteca` `{"usuarioId": 2, "juegoId": 1, "estado": "ME_INTERESA"}` | `201` (cada usuario tiene su biblioteca) |
+| `POST /biblioteca` con `"usuarioId": 9999` | `400` `"No existe el usuario con id 9999"` |
+| `POST /biblioteca` con `"juegoId": 9999` | `400` `"No existe el juego con id 9999"` |
+| `POST /biblioteca` con `"estado": "TERMINADO"` | `400` `["El estado debe ser ME_INTERESA o YA_JUGADO"]` |
+| `POST /biblioteca` `{}` | `400` `["El usuario es obligatorio", "El juego es obligatorio", "El estado es obligatorio"]` |
+| `GET /biblioteca?usuarioId=1` | `200` con los juegos 2 y 1, del más reciente al más viejo |
+| `GET /biblioteca?usuarioId=1&estado=YA_JUGADO` | `200` con solo el juego 2 |
+| `GET /biblioteca` | `400` `["El usuario es obligatorio"]` |
+| `GET /biblioteca?usuarioId=abc` | `400` `["El usuario debe ser un id entero"]` |
+| `GET /biblioteca?usuarioId=9999` | `404` `"No se encontró el usuario con id 9999"` |
+| `GET /biblioteca?usuarioId=2` | `200` con solo su juego (no ve los del usuario 1) |
+| `PATCH /biblioteca/1` `{"usuarioId": 1, "estado": "YA_JUGADO"}` | `200`, cambian el estado y la fecha |
+| Repetir el mismo `PATCH` | `200`, la fecha no cambia |
+| `PATCH /biblioteca/3` `{"usuarioId": 1, "estado": "YA_JUGADO"}` (no está guardado) | `404` `"El juego no está en la biblioteca del usuario"` |
+| `DELETE /biblioteca/2?usuarioId=1` | `204` sin contenido |
+| Repetir el mismo `DELETE` | `404` `"El juego no está en la biblioteca del usuario"` |
+| `DELETE /biblioteca/1` (sin `usuarioId`) | `400` `["El usuario es obligatorio"]` |
+| `DELETE /juegos/1` y después `GET /biblioteca?usuarioId=1` | `204`, y el juego ya no aparece en ninguna biblioteca |
