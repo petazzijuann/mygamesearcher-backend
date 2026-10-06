@@ -295,3 +295,70 @@
 | `DELETE /plataformas/1`, `/caracteristicas/1`, `/clasificaciones-edad/1` (en uso) | `409` con el mismo mensaje |
 | `DELETE /juegos/1` | `204` sin contenido |
 | `DELETE /generos/1` (después de borrar el juego que lo usaba) | `204` sin contenido |
+
+## Paso 7 - Entidad Usuario y CRUD Colección (2026-10-06)
+
+**Qué se hizo:** Se creó la entidad Usuario con registro (`POST /usuarios`) y consulta por id (`GET /usuarios/:id`), guardando la contraseña hasheada con bcrypt. Se hizo el CRUD completo de Colección (`/colecciones`), con sus juegos (N a N). El resto del CRUD de Usuario y el login quedan para la aprobación.
+
+**Cómo se hizo:**
+- Rama `feature/usuario-coleccion` creada desde `dev`.
+- `npm install bcryptjs` (versión 3.0.3, trae sus propios tipos).
+- Archivos nuevos en `src/usuario/`:
+  - `rol.enum.ts`: enum `Rol` (`USUARIO`, `ADMIN`), en archivo aparte porque lo van a usar los guards del login.
+  - `usuario.entity.ts`: tabla `usuario` con `nombre`, `apellido`, `email` (único), `contrasena_hash` (`select: false`), `rol` (enum de Postgres, por defecto `USUARIO`), `fecha_registro` (`timestamptz`, automática) y `plataforma_id` (opcional, `ON DELETE SET NULL`).
+  - `dto/crear-usuario.dto.ts`: nombre y apellido (hasta 50), email (formato válido, se guarda en minúsculas), contraseña (entre 8 y 72 caracteres) y `plataformaId` opcional.
+  - `usuario.service.ts`: `registrar` y `buscarPorId`.
+  - `usuario.controller.ts`, `usuario.module.ts`.
+- Archivos nuevos en `src/coleccion/`:
+  - `coleccion.entity.ts`: tabla `coleccion` con `nombre` (hasta 100), `descripcion` (opcional, hasta 500), `fecha_creacion` (`timestamptz`, automática), `usuario_id` (`ON DELETE CASCADE`) y tabla intermedia `coleccion_juego`. Restricción única (`usuario_id`, `nombre`).
+  - `dto/crear-coleccion.dto.ts`: `usuarioId`, `nombre`, `descripcion` y `juegoIds` (opcional, sin repetidos).
+  - `dto/actualizar-coleccion.dto.ts`: `PartialType(OmitType(CrearColeccionDto, ['usuarioId']))`.
+  - `dto/filtro-colecciones.dto.ts`: valida el query `?usuarioId=` del listado.
+  - `coleccion.service.ts`: `crear`, `listar`, `buscarPorId`, `actualizar`, `eliminar` y los privados `buscarUsuario` y `validarNombreDisponible`.
+  - `coleccion.controller.ts`, `coleccion.module.ts`.
+- `src/comun/buscar-por-ids.ts` (nuevo): la función que busca varias entidades por id y responde 400 indicando cuáles faltan. Antes era un método privado de `JuegoService`; ahora la usan Juego y Colección.
+- `src/juego/juego.service.ts`: usa `buscarPorIds` desde `src/comun/`.
+- `src/app.module.ts`: se importaron `UsuarioModule` y `ColeccionModule`.
+- Después de las pruebas se borraron los datos y se reiniciaron las secuencias de ids.
+
+**Por qué:**
+- `bcryptjs` en vez de `bcrypt`: es el mismo algoritmo, pero escrito en JavaScript, así que se instala sin compilar código nativo y no falla en ninguna computadora del grupo. Se descartó `crypto.scrypt` de Node porque obliga a manejar la sal a mano y es menos conocido. Se usan 10 rondas, el valor estándar.
+- La contraseña nunca sale en una respuesta, por dos vías: la columna tiene `select: false` (TypeORM no la trae salvo que se pida) y, después de guardar, el service vuelve a buscar el usuario en lugar de devolver el objeto en memoria, que sí tiene el hash.
+- La contraseña no se recorta (los espacios pueden ser parte de ella) y tiene un máximo de 72 caracteres porque bcrypt ignora lo que pase de 72 bytes.
+- El DTO de registro no tiene campo `rol`: si alguien manda `"rol": "ADMIN"`, el `whitelist` lo descarta y el usuario se crea como `USUARIO`. La forma de crear administradores se define con el login.
+- El email se guarda en minúsculas para que `Juan@Mail.com` y `juan@mail.com` cuenten como el mismo.
+- `fecha_registro` y `fecha_creacion` usan `timestamptz` para que la hora no dependa de la zona horaria del servidor.
+- `usuarioId` en el body de la colección es temporal: cuando haya login, el usuario sale del token y se elimina ese campo sin cambiar las rutas. En el `PATCH` no se acepta, para que una colección no cambie de dueño.
+- El nombre de la colección es único por usuario, sin distinguir mayúsculas: dos usuarios pueden tener una colección "Favoritos" cada uno.
+- Reglas de borrado: si se borra un usuario, se borran sus colecciones; si se borra un juego, sale de las colecciones (no se bloquea, porque el administrador no debería depender de las colecciones de los usuarios); si se borra la plataforma favorita, el usuario queda sin plataforma. No se declararon relaciones inversas en `Usuario`, `Juego` ni `Plataforma`, porque no hacen falta y así `remove()` no limpia por su cuenta las tablas intermedias (el problema encontrado en el Paso 6): los borrados los resuelve PostgreSQL.
+- `buscarPorIds` pasó a `src/comun/` porque ya lo usan dos módulos y lo va a usar Búsqueda en el Paso 10.
+
+**Requisito del TP que cubre:** Entidad Usuario y CRUD de Colección dependiente de Usuario (regularidad), con validación de entrada, contraseñas hasheadas y manejo de errores mediante códigos HTTP.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), y con al menos una plataforma y dos juegos cargados (ids 1 y 2):
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /usuarios` `{"nombre": "Juan", "apellido": "Pérez", "email": "  Juan@Mail.COM ", "contrasena": "secreta123", "plataformaId": 1, "rol": "ADMIN"}` | `201` con `"email": "juan@mail.com"`, `"rol": "USUARIO"` y la plataforma; sin `contrasena` ni `contrasenaHash` |
+| En la base: `SELECT contrasena_hash FROM usuario` | un hash que empieza con `$2b$10$` |
+| `POST /usuarios` con `"email": "JUAN@mail.com"` | `409` `"Ya existe un usuario con el email 'juan@mail.com'"` |
+| `POST /usuarios` `{}` | `400` `["El nombre es obligatorio", "El apellido es obligatorio", "El email es obligatorio", "La contraseña es obligatoria"]` |
+| `POST /usuarios` con `"email": "no-es-email"` | `400` `["El email no es válido"]` |
+| `POST /usuarios` con `"contrasena": "12345"` | `400` `["La contraseña debe tener al menos 8 caracteres"]` |
+| `POST /usuarios` con `"plataformaId": 9999` | `400` `"No existe la plataforma con id 9999"` |
+| `GET /usuarios/1` | `200` con el usuario y su plataforma, sin el hash |
+| `GET /usuarios/9999` | `404` `"No se encontró el usuario con id 9999"` |
+| `POST /colecciones` `{"usuarioId": 1, "nombre": "  Favoritos ", "descripcion": "Los mejores", "juegoIds": [1, 2]}` | `201` con `"nombre": "Favoritos"`, el usuario (sin hash) y los 2 juegos |
+| `POST /colecciones` `{"usuarioId": 1, "nombre": "FAVORITOS"}` | `409` `"El usuario ya tiene una colección con el nombre 'FAVORITOS'"` |
+| `POST /colecciones` `{"usuarioId": 2, "nombre": "Favoritos"}` (otro usuario) | `201` |
+| `POST /colecciones` `{"usuarioId": 9999, "nombre": "X"}` | `400` `"No existe el usuario con id 9999"` |
+| `POST /colecciones` `{"usuarioId": 1, "nombre": "X", "juegoIds": [9999]}` | `400` `"No existen los juegos con id: 9999"` |
+| `POST /colecciones` `{}` | `400` `["El usuario es obligatorio", "El nombre es obligatorio"]` |
+| `GET /colecciones?usuarioId=1` | `200` solo con las colecciones del usuario 1 |
+| `GET /colecciones?usuarioId=abc` | `400` `["El usuario debe ser un id entero"]` |
+| `GET /colecciones/9999` | `404` `"No se encontró la colección con id 9999"` |
+| `PATCH /colecciones/1` `{"juegoIds": [1]}` | `200`, la colección queda solo con el juego 1 |
+| `PATCH /colecciones/1` `{"usuarioId": 2, "nombre": "Mis favoritos"}` | `200`, cambia el nombre y el dueño sigue siendo el usuario 1 |
+| `DELETE /juegos/1` y después `GET /colecciones/1` | `204`, y la colección queda sin ese juego |
+| `DELETE /plataformas/1` (favorita del usuario 1, sin juegos que la usen) y después `GET /usuarios/1` | `204`, y el usuario queda con `"plataforma": null` |
+| `DELETE /colecciones/1` | `204` sin contenido |

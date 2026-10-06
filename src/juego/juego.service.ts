@@ -5,9 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Caracteristica } from '../caracteristica/caracteristica.entity';
 import { ClasificacionEdad } from '../clasificacion-edad/clasificacion-edad.entity';
+import { buscarPorIds } from '../comun/buscar-por-ids';
 import { Genero } from '../genero/genero.entity';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { ActualizarJuegoDto } from './dto/actualizar-juego.dto';
@@ -50,17 +51,17 @@ export class JuegoService {
     const juego = this.juegoRepository.create(datos);
     juego.clasificacionEdad =
       await this.buscarClasificacionEdad(clasificacionEdadId);
-    juego.plataformas = await this.buscarPorIds(
+    juego.plataformas = await buscarPorIds(
       this.plataformaRepository,
       plataformaIds,
       'las plataformas',
     );
-    juego.generos = await this.buscarPorIds(
+    juego.generos = await buscarPorIds(
       this.generoRepository,
       generoIds,
       'los géneros',
     );
-    juego.caracteristicas = await this.buscarPorIds(
+    juego.caracteristicas = await buscarPorIds(
       this.caracteristicaRepository,
       caracteristicaIds ?? [],
       'las características',
@@ -119,7 +120,7 @@ export class JuegoService {
       throw new BadRequestException('Las plataformas son obligatorias');
     }
     if (plataformaIds !== undefined) {
-      juego.plataformas = await this.buscarPorIds(
+      juego.plataformas = await buscarPorIds(
         this.plataformaRepository,
         plataformaIds,
         'las plataformas',
@@ -129,14 +130,14 @@ export class JuegoService {
       throw new BadRequestException('Los géneros son obligatorios');
     }
     if (generoIds !== undefined) {
-      juego.generos = await this.buscarPorIds(
+      juego.generos = await buscarPorIds(
         this.generoRepository,
         generoIds,
         'los géneros',
       );
     }
     if (caracteristicaIds !== undefined) {
-      juego.caracteristicas = await this.buscarPorIds(
+      juego.caracteristicas = await buscarPorIds(
         this.caracteristicaRepository,
         caracteristicaIds ?? [],
         'las características',
@@ -184,28 +185,5 @@ export class JuegoService {
       );
     }
     return clasificacion;
-  }
-
-  // Busca varias entidades por id y avisa cuáles no existen
-  private async buscarPorIds<T extends { id: number }>(
-    repositorio: Repository<T>,
-    ids: number[],
-    nombre: string,
-  ): Promise<T[]> {
-    if (ids.length === 0) {
-      return [];
-    }
-    const encontrados = await repositorio.findBy({
-      id: In(ids),
-    } as FindOptionsWhere<T>);
-    const faltantes = ids.filter(
-      (id) => !encontrados.some((entidad) => entidad.id === id),
-    );
-    if (faltantes.length > 0) {
-      throw new BadRequestException(
-        `No existen ${nombre} con id: ${faltantes.join(', ')}`,
-      );
-    }
-    return encontrados;
   }
 }

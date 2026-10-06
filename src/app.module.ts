@@ -8,6 +8,8 @@ import { PlataformaModule } from './plataforma/plataforma.module';
 import { CaracteristicaModule } from './caracteristica/caracteristica.module';
 import { ClasificacionEdadModule } from './clasificacion-edad/clasificacion-edad.module';
 import { JuegoModule } from './juego/juego.module';
+import { UsuarioModule } from './usuario/usuario.module';
+import { ColeccionModule } from './coleccion/coleccion.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { JuegoModule } from './juego/juego.module';
     CaracteristicaModule,
     ClasificacionEdadModule,
     JuegoModule,
+    UsuarioModule,
+    ColeccionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
