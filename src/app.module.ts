@@ -1,9 +1,34 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
-  imports: [],
+  imports: [
+    // Carga el .env y deja ConfigService disponible en todos los modulos
+    ConfigModule.forRoot({ isGlobal: true }),
+    // Async para leer las variables recien cuando el .env ya esta cargado
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres',
+        host: config.get<string>('DB_HOST'),
+        port: Number(config.get<string>('DB_PORT', '5432')),
+        username: config.get<string>('DB_USER'),
+        password: config.get<string>('DB_PASS'),
+        database: config.get<string>('DB_NAME'),
+        // Supabase exige SSL; en local se usa sin SSL
+        ssl:
+          config.get<string>('DB_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
+        autoLoadEntities: true,
+        // Solo en desarrollo: en produccion no se modifica el esquema automaticamente
+        synchronize: config.get<string>('NODE_ENV') !== 'production',
+      }),
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
