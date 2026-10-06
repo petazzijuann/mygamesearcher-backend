@@ -37,3 +37,54 @@
    GET http://localhost:3000/
    ```
    Respuesta esperada: `200 OK` con el texto `Hello World!`.
+
+## Paso 2 - CRUD Género (2026-10-06)
+
+**Qué se hizo:** ABM completo de géneros (alta, listado, consulta por id, modificación y baja) con validación de datos de entrada, nombre único sin distinguir mayúsculas y mensajes de error en español. Es el módulo que sirve de molde para Plataforma, Característica y Clasificación de Edad.
+
+**Cómo se hizo:**
+- Rama `feature/crud-genero` creada desde `dev`.
+- `npm install @nestjs/mapped-types` (paquete oficial de NestJS que provee `PartialType`).
+- Archivos nuevos en `src/genero/`:
+  - `genero.entity.ts`: tabla `genero` con `id` autoincremental y `nombre` (`varchar(50)`, único).
+  - `dto/crear-genero.dto.ts`: `nombre` obligatorio, texto, hasta 50 caracteres, con `trim` previo.
+  - `dto/actualizar-genero.dto.ts`: `PartialType(CrearGeneroDto)`, todos los campos opcionales.
+  - `genero.service.ts`: métodos `crear`, `listar`, `buscarPorId`, `actualizar` y `eliminar`, más `validarNombreDisponible` (privado).
+  - `genero.controller.ts`: rutas en `/generos`, sin lógica, delega en el service.
+  - `genero.module.ts`: registra la entidad con `TypeOrmModule.forFeature([Genero])`.
+- `src/app.module.ts`: se importó `GeneroModule`.
+- `src/main.ts`: se agregó `stopAtFirstError: true` al `ValidationPipe` global.
+- Se reinició la secuencia de ids de `genero` en Supabase después de las pruebas, para que el primer registro real sea el id 1.
+
+**Por qué:**
+- `PartialType` en el DTO de actualización: reutiliza las validaciones del DTO de creación marcándolas como opcionales. Si cambia una validación, se aplica a los dos. La alternativa (repetir las validaciones con `@IsOptional()`) obliga a mantenerlas duplicadas en cada CRUD.
+- `@Transform` con `trim`: evita guardar nombres con espacios de más y hace que un nombre de solo espacios cuente como vacío.
+- Orden de los decoradores: class-validator los ejecuta de abajo hacia arriba, por eso se declaran en orden inverso (largo máximo, texto, obligatorio). Junto con `stopAtFirstError`, cada campo devuelve un solo mensaje, el más relevante (por ejemplo, un body vacío responde solo "El nombre es obligatorio").
+- Nombre único validado en el service con `LOWER(nombre) = LOWER(:nombre)`: así no conviven "Acción" y "acción", y se responde 409 con un mensaje claro. Se descartó `ILike` porque interpreta `%` y `_` como comodines. La restricción `unique` de la base queda como segunda barrera.
+- Al actualizar, la validación de nombre excluye el propio id: guardar un género con el mismo nombre que ya tenía no es un conflicto.
+- `buscarPorId` centraliza el 404 y lo reutilizan `actualizar` y `eliminar`.
+- `ParseIntPipe` con mensaje propio (`idPipe`): el mensaje que trae NestJS está en inglés. Queda pendiente moverlo a un archivo común cuando se haga el siguiente CRUD.
+- `DELETE` responde `204 No Content` porque no hay nada que devolver.
+- Las relaciones N a N con `juego` y `busqueda` se agregan en el Paso 6, desde la entidad que tiene la tabla intermedia.
+
+**Requisito del TP que cubre:** CRUD simple de Género (regularidad), con validación de entrada y manejo de errores mediante códigos HTTP.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`):
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /generos` `{"nombre": "  Acción  "}` | `201` `{"id":1,"nombre":"Acción"}` |
+| `POST /generos` `{"nombre": "RPG", "id": 99}` | `201` `{"id":2,"nombre":"RPG"}` (el `id` enviado se ignora) |
+| `POST /generos` `{"nombre": "acción"}` | `409` `"Ya existe un género con el nombre 'acción'"` |
+| `POST /generos` `{}` | `400` `["El nombre es obligatorio"]` |
+| `POST /generos` `{"nombre": 5}` | `400` `["El nombre debe ser un texto"]` |
+| `POST /generos` con un nombre de 51 caracteres | `400` `["El nombre no puede superar los 50 caracteres"]` |
+| `GET /generos` | `200` `[{"id":1,"nombre":"Acción"},{"id":2,"nombre":"RPG"}]` |
+| `GET /generos/1` | `200` `{"id":1,"nombre":"Acción"}` |
+| `GET /generos/9999` | `404` `"No se encontró el género con id 9999"` |
+| `GET /generos/abc` | `400` `"El id debe ser un número entero"` |
+| `PATCH /generos/2` `{"nombre": "Rol"}` | `200` `{"id":2,"nombre":"Rol"}` |
+| `PATCH /generos/2` `{"nombre": "ACCIÓN"}` | `409` `"Ya existe un género con el nombre 'ACCIÓN'"` |
+| `PATCH /generos/1` `{"nombre": "Acción"}` | `200` (mismo nombre, no es conflicto) |
+| `DELETE /generos/2` | `204` sin contenido |
+| `GET /generos/2` | `404` `"No se encontró el género con id 2"` |

@@ -8,7 +8,14 @@ async function bootstrap() {
 
   // whitelist: descarta campos no declarados en el DTO
   // transform: convierte el body y los params a los tipos del DTO
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // stopAtFirstError: muestra un solo error por campo
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      stopAtFirstError: true,
+    }),
+  );
 
   const config = app.get(ConfigService);
   const puerto = config.get<string>('PORT') ?? 3000;

@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { GeneroModule } from './genero/genero.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AppService } from './app.service';
         synchronize: config.get<string>('NODE_ENV') !== 'production',
       }),
     }),
+    GeneroModule,
   ],
   controllers: [AppController],
   providers: [AppService],
