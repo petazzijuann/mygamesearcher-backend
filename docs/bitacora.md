@@ -134,3 +134,44 @@
 | `DELETE /plataformas/2` | `204` sin contenido |
 | `GET /plataformas/2` | `404` `"No se encontró la plataforma con id 2"` |
 | `GET /generos/abc` | `400` `"El id debe ser un número entero"` (Género sigue funcionando con el `idPipe` común) |
+
+## Paso 4 - CRUD Característica (2026-10-06)
+
+**Qué se hizo:** ABM completo de características de juego (por ejemplo, "Mundo abierto" o "Multijugador en línea"): alta, listado, consulta por id, modificación y baja, siguiendo el mismo molde que Género y Plataforma.
+
+**Cómo se hizo:**
+- Rama `feature/crud-caracteristica` creada desde `dev`.
+- Archivos nuevos en `src/caracteristica/`:
+  - `caracteristica.entity.ts`: tabla `caracteristica` con `id` autoincremental y `nombre` (`varchar(50)`, único).
+  - `dto/crear-caracteristica.dto.ts` y `dto/actualizar-caracteristica.dto.ts`: mismas validaciones que los CRUDs anteriores (`trim`, obligatorio, texto, hasta 50 caracteres) y `PartialType` para la actualización.
+  - `caracteristica.service.ts`: `crear`, `listar`, `buscarPorId`, `actualizar`, `eliminar` y `validarNombreDisponible` (privado).
+  - `caracteristica.controller.ts`: rutas en `/caracteristicas`, usando el `idPipe` común de `src/comun/id.pipe.ts`.
+  - `caracteristica.module.ts`: registra la entidad con `TypeOrmModule.forFeature([Caracteristica])`.
+- `src/app.module.ts`: se importó `CaracteristicaModule`.
+- Se reinició la secuencia de ids de `caracteristica` en Supabase después de las pruebas.
+
+**Por qué:**
+- Se reutilizaron sin cambios las decisiones de los Pasos 2 y 3 (validación, unicidad sin distinguir mayúsculas, 404/409, 204 en el `DELETE`, `idPipe` común). No hubo decisiones de diseño nuevas.
+- Las relaciones N a N con `juego` y `busqueda` se agregan en los Pasos 6 y 10, desde las entidades que tienen las tablas intermedias.
+
+**Requisito del TP que cubre:** CRUD simple de Característica (regularidad), con validación de entrada y manejo de errores mediante códigos HTTP.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`):
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /caracteristicas` `{"nombre": "  Mundo abierto  "}` | `201` `{"id":1,"nombre":"Mundo abierto"}` |
+| `POST /caracteristicas` `{"nombre": "Multijugador en línea", "id": 99}` | `201` `{"id":2,"nombre":"Multijugador en línea"}` (el `id` enviado se ignora) |
+| `POST /caracteristicas` `{"nombre": "MUNDO ABIERTO"}` | `409` `"Ya existe una característica con el nombre 'MUNDO ABIERTO'"` |
+| `POST /caracteristicas` `{}` | `400` `["El nombre es obligatorio"]` |
+| `POST /caracteristicas` `{"nombre": 5}` | `400` `["El nombre debe ser un texto"]` |
+| `POST /caracteristicas` con un nombre de 51 caracteres | `400` `["El nombre no puede superar los 50 caracteres"]` |
+| `GET /caracteristicas` | `200` `[{"id":2,"nombre":"Multijugador en línea"},{"id":1,"nombre":"Mundo abierto"}]` (orden alfabético) |
+| `GET /caracteristicas/1` | `200` `{"id":1,"nombre":"Mundo abierto"}` |
+| `GET /caracteristicas/9999` | `404` `"No se encontró la característica con id 9999"` |
+| `GET /caracteristicas/abc` | `400` `"El id debe ser un número entero"` |
+| `PATCH /caracteristicas/2` `{"nombre": "Cooperativo"}` | `200` `{"id":2,"nombre":"Cooperativo"}` |
+| `PATCH /caracteristicas/2` `{"nombre": "mundo abierto"}` | `409` `"Ya existe una característica con el nombre 'mundo abierto'"` |
+| `PATCH /caracteristicas/1` `{"nombre": "Mundo abierto"}` | `200` (mismo nombre, no es conflicto) |
+| `DELETE /caracteristicas/2` | `204` sin contenido |
+| `GET /caracteristicas/2` | `404` `"No se encontró la característica con id 2"` |

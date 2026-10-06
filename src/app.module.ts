@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeneroModule } from './genero/genero.module';
 import { PlataformaModule } from './plataforma/plataforma.module';
+import { CaracteristicaModule } from './caracteristica/caracteristica.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PlataformaModule } from './plataforma/plataforma.module';
     }),
     GeneroModule,
     PlataformaModule,
+    CaracteristicaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
