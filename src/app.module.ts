@@ -7,6 +7,7 @@ import { GeneroModule } from './genero/genero.module';
 import { PlataformaModule } from './plataforma/plataforma.module';
 import { CaracteristicaModule } from './caracteristica/caracteristica.module';
 import { ClasificacionEdadModule } from './clasificacion-edad/clasificacion-edad.module';
+import { JuegoModule } from './juego/juego.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { ClasificacionEdadModule } from './clasificacion-edad/clasificacion-edad
     PlataformaModule,
     CaracteristicaModule,
     ClasificacionEdadModule,
+    JuegoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -217,3 +217,81 @@
 | `PATCH /clasificaciones-edad/1` `{"nombre": "ATP"}` | `200` (mismo nombre, no es conflicto) |
 | `DELETE /clasificaciones-edad/2` | `204` sin contenido |
 | `GET /clasificaciones-edad/2` | `404` `"No se encontró la clasificación de edad con id 2"` |
+
+## Paso 6 - CRUD Juego (2026-10-06)
+
+**Qué se hizo:** ABM completo de juegos con su clasificación de edad (N a 1) y sus plataformas, géneros y características (N a N). Además, se agregó un filtro global que traduce los errores de restricciones de PostgreSQL a respuestas 400/409 en español, y se bloqueó el borrado de cualquier catálogo que esté siendo usado por un juego.
+
+**Cómo se hizo:**
+- Rama `feature/crud-juego` creada desde `dev`.
+- `src/comun/filtro-errores-bd.filter.ts` (nuevo): atrapa `QueryFailedError` de TypeORM y, según el código de PostgreSQL, responde:
+  - `23502` (dato obligatorio nulo) → `400 "Falta un dato obligatorio"`
+  - `23503` (clave foránea) al borrar → `409 "No se puede eliminar porque hay otros datos que lo usan"`; al insertar → `400 "Uno de los datos relacionados no existe"`
+  - `23505` (valor único repetido) → `409 "Ya existe un registro con esos datos"`
+  - Cualquier otro error sigue el manejo normal de NestJS.
+- `src/main.ts`: se registró el filtro con `app.useGlobalFilters(new FiltroErroresBd(httpAdapter))`.
+- Archivos nuevos en `src/juego/`:
+  - `juego.entity.ts`: tabla `juego` (`titulo` varchar(100), `anio_lanzamiento` int, `descripcion` text, `imagen_url` varchar(500) opcional), clave foránea `clasificacion_edad_id` y tablas intermedias `juego_plataforma`, `juego_genero` y `juego_caracteristica`. Restricción única (`titulo`, `anio_lanzamiento`).
+  - `dto/crear-juego.dto.ts`: validaciones de cada campo (año entre 1950 y el actual, URL con `http`/`https`, al menos 1 plataforma y 1 género, listas sin ids repetidos, características opcionales).
+  - `dto/actualizar-juego.dto.ts`: `PartialType(CrearJuegoDto)`.
+  - `juego.service.ts`: `crear`, `listar`, `buscarPorId`, `actualizar`, `eliminar`, y los privados `validarTituloDisponible`, `buscarClasificacionEdad` y `buscarPorIds` (genérico para las tres listas).
+  - `juego.controller.ts`: rutas en `/juegos`.
+  - `juego.module.ts`: registra `Juego` y las cuatro entidades de catálogo con `TypeOrmModule.forFeature`, para que el service valide los ids del body.
+- `src/app.module.ts`: se importó `JuegoModule`.
+- `genero.entity.ts`, `plataforma.entity.ts`, `caracteristica.entity.ts`: se agregó la relación inversa `juegos` (`@ManyToMany` con `onDelete: 'RESTRICT'` y `persistence: false`).
+- `clasificacion-edad.entity.ts`: se agregó la relación inversa `juegos` (`@OneToMany`).
+- Después de las pruebas se borraron los datos y se reiniciaron las secuencias de ids de las cinco tablas.
+
+**Por qué:**
+- Las relaciones se mandan en el body como listas de ids (`plataformaIds`, `generoIds`, `caracteristicaIds`) y un `clasificacionEdadId`. En el `PATCH`, una lista enviada reemplaza a la anterior y lo que no se envía no cambia.
+- Se exige al menos una plataforma y un género porque la recomendación filtra por esos datos: un juego sin ellos nunca se recomendaría. Las características son opcionales.
+- Si un id del body no existe se responde `400` (y no `404`) porque lo incorrecto es el contenido del pedido, no la URL. El mensaje indica qué ids faltan.
+- No se repite la combinación título + año (sin distinguir mayúsculas): así se permiten remakes con el mismo nombre ("Doom" 1993 y "Doom" 2016) pero no cargas duplicadas. Se valida en el service con `LOWER(titulo)` y la restricción única de la base queda como segunda barrera.
+- `JuegoService` usa directamente los repositorios de los catálogos en lugar de sus services, para no agregar métodos nuevos ni dependencias entre módulos.
+- Borrado de catálogos en uso: se eligió bloquearlo con `409` en vez de quitar el dato de los juegos sin avisar. TypeORM crea las tablas intermedias con borrado en cascada salvo que la relación inversa defina otro `onDelete`, por eso se declararon las relaciones inversas con `RESTRICT`.
+- `persistence: false` en esas relaciones: durante las pruebas, borrar un género en uso respondía `204` y el juego se quedaba sin género. La causa es que `repository.remove()` borra por su cuenta las filas de la tabla intermedia antes del `DELETE` (lo hace `ManyToManySubjectBuilder.buildForAllRemoval` de TypeORM), y entonces el `RESTRICT` nunca llega a actuar. Con `persistence: false` TypeORM no toca la tabla intermedia desde el lado del catálogo y PostgreSQL bloquea el borrado.
+- Filtro global en vez de validar en cada service: los catálogos no conocen a Juego (ni a las entidades que vendrán, como Recomendación o Colección), así que el lugar natural para detectar "está en uso" es la restricción de la base. El filtro lo traduce una sola vez para todos los módulos.
+- Código `23502`: `PartialType` marca los campos con `@IsOptional()`, que también deja pasar `null` sin validar. Antes, un `PATCH /generos/1` con `{"nombre": null}` respondía `500`; ahora responde `400`. En Juego, los `null` en `clasificacionEdadId`, `plataformaIds` y `generoIds` se controlan en el service, porque TypeORM ignora un `null` dentro de un `where` y podría devolver un registro cualquiera.
+
+**Requisito del TP que cubre:** CRUD dependiente de Juego (regularidad), que depende de los cuatro CRUDs simples anteriores, con relaciones N a 1 y N a N, validación de entrada y manejo de errores mediante códigos HTTP.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), crear primero los datos de catálogo (por ejemplo, plataformas 1 y 2, géneros 1 y 2, característica 1 y clasificación de edad 1). Body base del juego:
+
+```json
+{
+  "titulo": "Elden Ring",
+  "anioLanzamiento": 2022,
+  "descripcion": "RPG de acción en mundo abierto",
+  "imagenUrl": "https://ejemplo.com/elden.jpg",
+  "clasificacionEdadId": 1,
+  "plataformaIds": [1, 2],
+  "generoIds": [1],
+  "caracteristicaIds": [1]
+}
+```
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /juegos` con el body base | `201` con el juego y sus relaciones (`clasificacionEdad`, `plataformas`, `generos`, `caracteristicas`) |
+| `POST /juegos` igual pero `"titulo": "ELDEN RING"` | `409` `"Ya existe el juego 'ELDEN RING' del año 2022"` |
+| `POST /juegos` igual pero `"anioLanzamiento": 2023` | `201` (otro año se permite) |
+| `POST /juegos` `{}` | `400` con un mensaje por campo obligatorio (`"El título es obligatorio"`, `"Los géneros son obligatorios"`, etc.) |
+| `POST /juegos` con `"anioLanzamiento": 1900` | `400` `"El año de lanzamiento debe estar entre 1950 y 2026"` |
+| `POST /juegos` con `"anioLanzamiento": "2022"` | `400` `"El año de lanzamiento debe ser un número entero"` |
+| `POST /juegos` con `"imagenUrl": "no-es-url"` | `400` `"La URL de la imagen no es válida"` |
+| `POST /juegos` con `"plataformaIds": []` | `400` `"Debe indicar al menos una plataforma"` |
+| `POST /juegos` con `"plataformaIds": [1, 1]` | `400` `"Las plataformas no pueden repetirse"` |
+| `POST /juegos` con `"plataformaIds": [1, 9999]` | `400` `"No existen las plataformas con id: 9999"` |
+| `POST /juegos` con `"clasificacionEdadId": 9999` | `400` `"No existe la clasificación de edad con id 9999"` |
+| `GET /juegos` | `200` con la lista de juegos y sus relaciones, ordenada por título |
+| `GET /juegos/9999` | `404` `"No se encontró el juego con id 9999"` |
+| `GET /juegos/abc` | `400` `"El id debe ser un número entero"` |
+| `PATCH /juegos/2` `{"generoIds": [2]}` | `200`, cambian solo los géneros |
+| `PATCH /juegos/2` `{"anioLanzamiento": 2022}` | `409` `"Ya existe el juego 'Elden Ring' del año 2022"` |
+| `PATCH /juegos/2` `{"clasificacionEdadId": null}` | `400` `"La clasificación de edad es obligatoria"` |
+| `PATCH /juegos/2` `{"titulo": null}` | `400` `"Falta un dato obligatorio"` |
+| `PATCH /generos/1` `{"nombre": null}` | `400` `"Falta un dato obligatorio"` |
+| `DELETE /generos/1` (lo usa un juego) | `409` `"No se puede eliminar porque hay otros datos que lo usan"` |
+| `DELETE /plataformas/1`, `/caracteristicas/1`, `/clasificaciones-edad/1` (en uso) | `409` con el mismo mensaje |
+| `DELETE /juegos/1` | `204` sin contenido |
+| `DELETE /generos/1` (después de borrar el juego que lo usaba) | `204` sin contenido |

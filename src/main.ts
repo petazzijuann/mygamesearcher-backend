@@ -1,7 +1,8 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { FiltroErroresBd } from './comun/filtro-errores-bd.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,10 @@ async function bootstrap() {
       stopAtFirstError: true,
     }),
   );
+
+  // Convierte errores de restricciones de Postgres (clave foránea, único) en 400/409
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new FiltroErroresBd(httpAdapter));
 
   const config = app.get(ConfigService);
   const puerto = config.get<string>('PORT') ?? 3000;
