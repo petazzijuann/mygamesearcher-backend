@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { GeneroModule } from './genero/genero.module';
 import { PlataformaModule } from './plataforma/plataforma.module';
 import { CaracteristicaModule } from './caracteristica/caracteristica.module';
+import { ClasificacionEdadModule } from './clasificacion-edad/clasificacion-edad.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CaracteristicaModule } from './caracteristica/caracteristica.module';
     GeneroModule,
     PlataformaModule,
     CaracteristicaModule,
+    ClasificacionEdadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

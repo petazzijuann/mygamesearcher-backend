@@ -175,3 +175,45 @@
 | `PATCH /caracteristicas/1` `{"nombre": "Mundo abierto"}` | `200` (mismo nombre, no es conflicto) |
 | `DELETE /caracteristicas/2` | `204` sin contenido |
 | `GET /caracteristicas/2` | `404` `"No se encontró la característica con id 2"` |
+
+## Paso 5 - CRUD Clasificación de Edad (2026-10-06)
+
+**Qué se hizo:** ABM completo de clasificaciones de edad (por ejemplo, "ATP", "+13" o "PEGI 18"): alta, listado, consulta por id, modificación y baja, siguiendo el mismo molde que los catálogos anteriores. Con este paso quedan terminados los cuatro catálogos de los que depende Juego.
+
+**Cómo se hizo:**
+- Rama `feature/crud-clasificacion-edad` creada desde `dev`.
+- Archivos nuevos en `src/clasificacion-edad/`:
+  - `clasificacion-edad.entity.ts`: tabla `clasificacion_edad` con `id` autoincremental y `nombre` (`varchar(50)`, único).
+  - `dto/crear-clasificacion-edad.dto.ts` y `dto/actualizar-clasificacion-edad.dto.ts`: mismas validaciones que los CRUDs anteriores (`trim`, obligatorio, texto, hasta 50 caracteres) y `PartialType` para la actualización.
+  - `clasificacion-edad.service.ts`: `crear`, `listar`, `buscarPorId`, `actualizar`, `eliminar` y `validarNombreDisponible` (privado).
+  - `clasificacion-edad.controller.ts`: rutas en `/clasificaciones-edad`, usando el `idPipe` común.
+  - `clasificacion-edad.module.ts`: registra la entidad con `TypeOrmModule.forFeature([ClasificacionEdad])`.
+- `src/app.module.ts`: se importó `ClasificacionEdadModule`.
+- Se reinició la secuencia de ids de `clasificacion_edad` en Supabase después de las pruebas.
+
+**Por qué:**
+- Nombres para una entidad de dos palabras, cada uno con la convención de su contexto: tabla `clasificacion_edad` (snake_case, como el resto del modelo), clase `ClasificacionEdad`, carpeta y archivos `clasificacion-edad` (kebab-case, convención de NestJS) y ruta `/clasificaciones-edad` (plural y en minúscula).
+- Se reutilizaron sin cambios las decisiones de los pasos anteriores (validación, unicidad sin distinguir mayúsculas, 404/409, 204 en el `DELETE`, `idPipe` común).
+- La relación con `juego` (`clasificacion_edad_id`, muchos juegos a una clasificación) se agrega en el Paso 6 desde la entidad Juego, que es la que tiene la clave foránea.
+
+**Requisito del TP que cubre:** CRUD simple de Clasificación de Edad (regularidad), con validación de entrada y manejo de errores mediante códigos HTTP.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`):
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /clasificaciones-edad` `{"nombre": "  ATP  "}` | `201` `{"id":1,"nombre":"ATP"}` |
+| `POST /clasificaciones-edad` `{"nombre": "PEGI 18", "id": 99}` | `201` `{"id":2,"nombre":"PEGI 18"}` (el `id` enviado se ignora) |
+| `POST /clasificaciones-edad` `{"nombre": "atp"}` | `409` `"Ya existe una clasificación de edad con el nombre 'atp'"` |
+| `POST /clasificaciones-edad` `{}` | `400` `["El nombre es obligatorio"]` |
+| `POST /clasificaciones-edad` `{"nombre": 5}` | `400` `["El nombre debe ser un texto"]` |
+| `POST /clasificaciones-edad` con un nombre de 51 caracteres | `400` `["El nombre no puede superar los 50 caracteres"]` |
+| `GET /clasificaciones-edad` | `200` `[{"id":1,"nombre":"ATP"},{"id":2,"nombre":"PEGI 18"}]` |
+| `GET /clasificaciones-edad/1` | `200` `{"id":1,"nombre":"ATP"}` |
+| `GET /clasificaciones-edad/9999` | `404` `"No se encontró la clasificación de edad con id 9999"` |
+| `GET /clasificaciones-edad/abc` | `400` `"El id debe ser un número entero"` |
+| `PATCH /clasificaciones-edad/2` `{"nombre": "+18"}` | `200` `{"id":2,"nombre":"+18"}` |
+| `PATCH /clasificaciones-edad/2` `{"nombre": "Atp"}` | `409` `"Ya existe una clasificación de edad con el nombre 'Atp'"` |
+| `PATCH /clasificaciones-edad/1` `{"nombre": "ATP"}` | `200` (mismo nombre, no es conflicto) |
+| `DELETE /clasificaciones-edad/2` | `204` sin contenido |
+| `GET /clasificaciones-edad/2` | `404` `"No se encontró la clasificación de edad con id 2"` |
