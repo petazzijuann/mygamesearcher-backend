@@ -88,3 +88,49 @@
 | `PATCH /generos/1` `{"nombre": "Acción"}` | `200` (mismo nombre, no es conflicto) |
 | `DELETE /generos/2` | `204` sin contenido |
 | `GET /generos/2` | `404` `"No se encontró el género con id 2"` |
+
+## Paso 3 - CRUD Plataforma (2026-10-06)
+
+**Qué se hizo:** ABM completo de plataformas (alta, listado, consulta por id, modificación y baja) siguiendo el molde de Género. Además, el `ParseIntPipe` con mensaje en español se movió a un archivo común para que lo usen todos los controllers.
+
+**Cómo se hizo:**
+- Rama `feature/crud-plataforma` creada desde `dev`.
+- `src/comun/id.pipe.ts` (nuevo): exporta `idPipe`, el `ParseIntPipe` que responde `400 "El id debe ser un número entero"`.
+- `src/genero/genero.controller.ts`: se eliminó la definición local de `idPipe` y se importa desde `src/comun/id.pipe.ts`. El comportamiento de `/generos` no cambia.
+- Archivos nuevos en `src/plataforma/`:
+  - `plataforma.entity.ts`: tabla `plataforma` con `id` autoincremental y `nombre` (`varchar(50)`, único).
+  - `dto/crear-plataforma.dto.ts` y `dto/actualizar-plataforma.dto.ts`: mismas validaciones que Género (`trim`, obligatorio, texto, hasta 50 caracteres) y `PartialType` para la actualización.
+  - `plataforma.service.ts`: `crear`, `listar`, `buscarPorId`, `actualizar`, `eliminar` y `validarNombreDisponible` (privado).
+  - `plataforma.controller.ts`: rutas en `/plataformas`.
+  - `plataforma.module.ts`: registra la entidad con `TypeOrmModule.forFeature([Plataforma])`.
+- `src/app.module.ts`: se importó `PlataformaModule`.
+- Se reinició la secuencia de ids de `plataforma` en Supabase después de las pruebas.
+
+**Por qué:**
+- Las decisiones de validación, unicidad sin distinguir mayúsculas, 404/409 y 204 en el `DELETE` son las mismas del Paso 2.
+- `idPipe` en `src/comun/`: con dos controllers usándolo, tenerlo copiado en cada uno obligaría a mantener el mismo código en varios lugares. Ahora cualquier controller nuevo lo importa.
+- No se creó una clase base genérica para los CRUDs de catálogo (Género, Plataforma, Característica, Clasificación de Edad): cada service queda explícito y fácil de leer, y los módulos siguientes (Juego, Usuario) no siguen este mismo molde.
+- La relación con `juego` se agrega en el Paso 6 y la de `usuario` (`plataforma_id` opcional) en el Paso 7.
+
+**Requisito del TP que cubre:** CRUD simple de Plataforma (regularidad), con validación de entrada y manejo de errores mediante códigos HTTP.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`):
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /plataformas` `{"nombre": "  PC  "}` | `201` `{"id":1,"nombre":"PC"}` |
+| `POST /plataformas` `{"nombre": "PlayStation 5", "id": 99}` | `201` `{"id":2,"nombre":"PlayStation 5"}` (el `id` enviado se ignora) |
+| `POST /plataformas` `{"nombre": "pc"}` | `409` `"Ya existe una plataforma con el nombre 'pc'"` |
+| `POST /plataformas` `{}` | `400` `["El nombre es obligatorio"]` |
+| `POST /plataformas` `{"nombre": 5}` | `400` `["El nombre debe ser un texto"]` |
+| `POST /plataformas` con un nombre de 51 caracteres | `400` `["El nombre no puede superar los 50 caracteres"]` |
+| `GET /plataformas` | `200` `[{"id":1,"nombre":"PC"},{"id":2,"nombre":"PlayStation 5"}]` |
+| `GET /plataformas/1` | `200` `{"id":1,"nombre":"PC"}` |
+| `GET /plataformas/9999` | `404` `"No se encontró la plataforma con id 9999"` |
+| `GET /plataformas/abc` | `400` `"El id debe ser un número entero"` |
+| `PATCH /plataformas/2` `{"nombre": "PS5"}` | `200` `{"id":2,"nombre":"PS5"}` |
+| `PATCH /plataformas/2` `{"nombre": "PC"}` | `409` `"Ya existe una plataforma con el nombre 'PC'"` |
+| `PATCH /plataformas/1` `{"nombre": "PC"}` | `200` (mismo nombre, no es conflicto) |
+| `DELETE /plataformas/2` | `204` sin contenido |
+| `GET /plataformas/2` | `404` `"No se encontró la plataforma con id 2"` |
+| `GET /generos/abc` | `400` `"El id debe ser un número entero"` (Género sigue funcionando con el `idPipe` común) |

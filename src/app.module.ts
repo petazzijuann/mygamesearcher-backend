@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeneroModule } from './genero/genero.module';
+import { PlataformaModule } from './plataforma/plataforma.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { GeneroModule } from './genero/genero.module';
       }),
     }),
     GeneroModule,
+    PlataformaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

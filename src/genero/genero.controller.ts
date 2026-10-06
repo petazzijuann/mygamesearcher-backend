@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,19 +6,13 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common';
+import { idPipe } from '../comun/id.pipe';
 import { ActualizarGeneroDto } from './dto/actualizar-genero.dto';
 import { CrearGeneroDto } from './dto/crear-genero.dto';
 import { GeneroService } from './genero.service';
-
-// ParseIntPipe con el mensaje de error en español
-const idPipe = new ParseIntPipe({
-  exceptionFactory: () =>
-    new BadRequestException('El id debe ser un número entero'),
-});
 
 @Controller('generos')
 export class GeneroController {
