@@ -13,8 +13,10 @@ import { Juego } from '../juego/juego.entity';
 import { EstadoJuego } from '../juego-guardado/estado-juego.enum';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { Usuario } from '../usuario/usuario.entity';
+import { CalificarRecomendacionDto } from './dto/calificar-recomendacion.dto';
 import { FiltroHistorialDto } from './dto/filtro-historial.dto';
 import { GenerarRecomendacionDto } from './dto/generar-recomendacion.dto';
+import { Recomendacion } from './recomendacion.entity';
 
 // Las fechas del filtro del historial se interpretan en hora de Argentina
 // (la base guarda en UTC: una búsqueda del 6/10 a las 22:00 queda como 7/10 01:00 UTC)
@@ -40,6 +42,8 @@ export class RecomendacionService {
   constructor(
     @InjectRepository(Busqueda)
     private readonly busquedaRepository: Repository<Busqueda>,
+    @InjectRepository(Recomendacion)
+    private readonly recomendacionRepository: Repository<Recomendacion>,
     @InjectRepository(Juego)
     private readonly juegoRepository: Repository<Juego>,
     @InjectRepository(Usuario)
@@ -188,6 +192,45 @@ export class RecomendacionService {
       throw new NotFoundException(`No se encontró la búsqueda con id ${id}`);
     }
     return busqueda;
+  }
+
+  // CUU Consultar historial: calificar el juego recomendado en una búsqueda
+  async calificar(
+    busquedaId: number,
+    juegoId: number,
+    dto: CalificarRecomendacionDto,
+  ): Promise<Recomendacion> {
+    await this.validarBusquedaExiste(busquedaId);
+    const recomendacion = await this.recomendacionRepository.findOne({
+      where: { busqueda: { id: busquedaId }, juego: { id: juegoId } },
+      relations: { juego: RELACIONES_JUEGO },
+    });
+    if (!recomendacion) {
+      throw new NotFoundException(
+        'El juego no está entre las recomendaciones de la búsqueda',
+      );
+    }
+
+    recomendacion.calificacion = dto.calificacion;
+    recomendacion.fechaCalificacion = new Date();
+    // Si no viene, queda el comentario anterior; null o vacío lo borra
+    if (dto.comentario !== undefined) {
+      recomendacion.comentario = dto.comentario || null;
+    }
+    return this.recomendacionRepository.save(recomendacion);
+  }
+
+  // CUU Consultar historial: borrar una búsqueda con sus recomendaciones
+  async eliminar(id: number): Promise<void> {
+    await this.validarBusquedaExiste(id);
+    // DELETE directo: Postgres borra en cascada las recomendaciones y los criterios
+    await this.busquedaRepository.delete(id);
+  }
+
+  private async validarBusquedaExiste(id: number): Promise<void> {
+    if (!(await this.busquedaRepository.existsBy({ id }))) {
+      throw new NotFoundException(`No se encontró la búsqueda con id ${id}`);
+    }
   }
 
   // Juegos en alguna de las plataformas y con alguno de los géneros elegidos,

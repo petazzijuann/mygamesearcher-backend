@@ -611,3 +611,43 @@
 | `DELETE /colecciones/9999/juegos/1` | `404` `"No se encontró la colección con id 9999"` |
 | `DELETE /colecciones/abc/juegos/1` o `/colecciones/1/juegos/abc` | `400` `"El id debe ser un número entero"` |
 | `PATCH /colecciones/1` `{"juegoIds": [1, 3]}` | `200`, la lista entera se reemplaza por los juegos 1 y 3 |
+
+## Paso 13 - CUU Consultar historial de recomendaciones (2026-10-06)
+
+**Qué se hizo:** Se completó el caso de uso del historial. La consulta (listado filtrado por fecha y detalle) ya existía desde el Paso 11; se agregó que el usuario califique cada juego recomendado de 1 a 5 con un comentario opcional (`PATCH /recomendaciones/:busquedaId/juegos/:juegoId`) y que borre una búsqueda de su historial (`DELETE /recomendaciones/:id`).
+
+**Cómo se hizo:**
+- Rama `feature/consultar-historial` creada desde `dev`.
+- `src/recomendacion/dto/calificar-recomendacion.dto.ts` (nuevo): `calificacion` obligatoria, entera, entre 1 y 5; `comentario` opcional, sin espacios en los extremos, hasta 500 caracteres.
+- `src/recomendacion/recomendacion.service.ts`: se inyectó el repositorio de `Recomendacion` y se agregaron `calificar`, `eliminar` y el privado `validarBusquedaExiste`.
+- `src/recomendacion/recomendacion.controller.ts`: rutas `PATCH /recomendaciones/:busquedaId/juegos/:juegoId` y `DELETE /recomendaciones/:id`.
+
+**Por qué:**
+- La recomendación a calificar se identifica por búsqueda y juego (subrecurso de la búsqueda, igual que los juegos de una colección): el frontend ya tiene ambos ids en la pantalla del detalle, y la combinación es única (restricción del Paso 10). Se descartó una ruta por id de recomendación porque mezclaba en `/recomendaciones/...` ids de búsqueda y de recomendación.
+- La calificación es entera de 1 a 5 (se rechazan `4.5` y `"4"`). Además del DTO, el `CHECK` de la tabla queda como segunda barrera.
+- Se puede recalificar: se reemplaza la calificación y `fecha_calificacion` toma la fecha y hora del momento. Si el comentario no viene, se mantiene el anterior (así se puede cambiar solo la calificación); si viene `null` o vacío, se borra. Un comentario de solo espacios se guarda como `null` para no dejar textos vacíos en la base.
+- Códigos de error: búsqueda inexistente `404`; juego que no está entre las recomendaciones de esa búsqueda `404`; datos inválidos `400`.
+- Borrar una búsqueda usa `delete()` (un `DELETE` directo) en lugar de `remove()`: no hace falta cargarla con sus relaciones, y PostgreSQL borra en cascada sus recomendaciones y los criterios de las tablas intermedias. Los juegos no se tocan.
+- No se pide `usuarioId`: el control de que la búsqueda sea del usuario que la califica o la borra se agrega con el login.
+
+**Requisito del TP que cubre:** CUU Consultar historial de recomendaciones (aprobación).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), un usuario y dos búsquedas: la 1 recomienda los juegos 1 y 2, y la 2 recomienda el juego 3:
+
+| Request | Respuesta esperada |
+|---|---|
+| `PATCH /recomendaciones/1/juegos/1` `{"calificacion": 4, "comentario": "  Muy bueno  "}` | `200` con `"calificacion": 4`, `"comentario": "Muy bueno"`, `fechaCalificacion` y el juego completo |
+| `PATCH /recomendaciones/1/juegos/1` `{"calificacion": 5}` | `200` con calificación 5; el comentario sigue siendo `"Muy bueno"` y la fecha se actualiza |
+| `PATCH /recomendaciones/1/juegos/1` `{"calificacion": 5, "comentario": null}` (o `"   "`) | `200` con `"comentario": null` |
+| `PATCH /recomendaciones/1/juegos/2` `{"calificacion": 0}` (o `6`) | `400` `["La calificación debe estar entre 1 y 5"]` |
+| `PATCH /recomendaciones/1/juegos/2` `{"calificacion": 4.5}` (o `"4"`) | `400` `["La calificación debe ser un número entero"]` |
+| `PATCH /recomendaciones/1/juegos/2` `{}` | `400` `["La calificación es obligatoria"]` |
+| `PATCH /recomendaciones/1/juegos/2` con un comentario de 501 caracteres | `400` `["El comentario no puede superar los 500 caracteres"]` |
+| `PATCH /recomendaciones/1/juegos/3` (el juego 3 está en la búsqueda 2) | `404` `"El juego no está entre las recomendaciones de la búsqueda"` |
+| `PATCH /recomendaciones/9999/juegos/1` | `404` `"No se encontró la búsqueda con id 9999"` |
+| `PATCH /recomendaciones/abc/juegos/1` | `400` `"El id debe ser un número entero"` |
+| `GET /recomendaciones?usuarioId=1` y `GET /recomendaciones/1` | `200`, cada recomendación muestra su `calificacion` y `comentario` |
+| `DELETE /recomendaciones/1` | `204` sin contenido |
+| `GET /recomendaciones/1` después de borrarla | `404` `"No se encontró la búsqueda con id 1"` |
+| `GET /recomendaciones?usuarioId=1` después de borrarla | `200` con solo la búsqueda 2 |
+| Repetir `DELETE /recomendaciones/1` | `404` `"No se encontró la búsqueda con id 1"` |
