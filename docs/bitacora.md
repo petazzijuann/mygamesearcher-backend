@@ -973,3 +973,37 @@
 | Seguir el README en una carpeta nueva (clonar, `npm install`, crear el `.env`, `npm run start:dev`) | La API arranca, crea las tablas y el administrador, y muestra `Documentación en http://localhost:3000/api` |
 | Abrir `docs/README.md` | Índice con enlaces a la bitácora, a `openapi.json` y al README principal, sin enlaces rotos |
 | `npm run lint`, `npm run test` y `npm run test:e2e` | Sin errores; 13 y 6 tests pasan |
+
+## Paso 21 - CORS para la conexión con el frontend (2026-10-07)
+
+**Qué se hizo:** Se habilitó CORS para que el frontend, que corre en otra dirección (en desarrollo `http://localhost:5173`, y una vez publicado la de su hosting), pueda llamar a la API desde el navegador. Solo se aceptan las direcciones configuradas en la variable nueva `FRONTEND_URL`.
+
+**Cómo se hizo:**
+- Rama `feature/cors` creada desde `dev`.
+- `src/comun/configurar-cors.ts` (nuevo):
+  - `obtenerOrigenesPermitidos(valor)`: convierte `FRONTEND_URL` en la lista de orígenes permitidos. Acepta varias direcciones separadas por coma, saca espacios y la `/` final, y si no hay ninguna usa `http://localhost:5173`.
+  - `configurarCors(app, origenes)`: llama a `app.enableCors({ origin: origenes })`.
+- `src/comun/configurar-cors.spec.ts` (nuevo): test unitario de `obtenerOrigenesPermitidos` (valor por defecto y varias direcciones con espacios y barra final).
+- `src/main.ts`: lee `FRONTEND_URL` con `ConfigService`, configura CORS y muestra en la consola `CORS habilitado para: ...`.
+- `.env.example`: variable `FRONTEND_URL=http://localhost:5173`.
+- `README.md`: `FRONTEND_URL` en la tabla del `.env` y una sección "Conexión con el frontend" (`VITE_API_URL` en el frontend y `FRONTEND_URL` en el backend).
+
+**Por qué:**
+- El frontend llama a la API directamente desde el navegador. Como están en direcciones distintas (otro puerto u otro dominio), el navegador bloquea las respuestas salvo que la API indique, con los headers de CORS, que ese origen está permitido. Postman, Swagger y los scripts de prueba no aplican esta regla; por eso no había aparecido hasta conectar el frontend.
+- Se permiten solo los orígenes de `FRONTEND_URL` y no cualquiera (`*`), para que otros sitios no puedan usar la API desde el navegador de un usuario.
+- `FRONTEND_URL` acepta varias direcciones para que el mismo backend publicado sirva al frontend publicado y al frontend local de quien esté desarrollando, sin cambiar código. Se saca la `/` final porque el navegador manda el origen sin ella, y con la barra no coincidiría.
+- La configuración está en `main.ts` y no en `configurarApp`, porque necesita leer el `.env` y el test de integración no lo carga.
+- No hizo falta configurar métodos ni headers: los valores por defecto de CORS en NestJS permiten `GET`, `POST`, `PATCH` y `DELETE`, y aceptan el header `Authorization` con el token.
+- No se agregaron dependencias: CORS viene incluido en NestJS.
+
+**Requisito del TP que cubre:** Comunicación entre el frontend y el backend a través de la API (base para el deploy de los dos repositorios en direcciones distintas).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), la consola muestra `CORS habilitado para: http://localhost:5173`. Se puede simular lo que hace el navegador mandando el header `Origin`:
+
+| Request | Resultado esperado |
+|---|---|
+| `OPTIONS /generos` con `Origin: http://localhost:5173`, `Access-Control-Request-Method: POST` y `Access-Control-Request-Headers: authorization,content-type` | `204` con `Access-Control-Allow-Origin: http://localhost:5173`, `Access-Control-Allow-Methods: GET,HEAD,PUT,PATCH,POST,DELETE` y `Access-Control-Allow-Headers: authorization,content-type` |
+| `GET /generos` con `Origin: http://localhost:5173` | `200` con `Access-Control-Allow-Origin: http://localhost:5173` |
+| `GET /generos` con `Origin: http://sitio-malicioso.com` | Sin el header `Access-Control-Allow-Origin` (el navegador bloquea la respuesta) |
+| Arrancar con `FRONTEND_URL="http://localhost:5173, https://dgame.vercel.app/"` y pedir con `Origin: https://dgame.vercel.app` | La consola muestra las dos direcciones (sin la `/` final) y la respuesta incluye `Access-Control-Allow-Origin: https://dgame.vercel.app` |
+| `npm run test` | 15 tests pasan (los 13 anteriores y los 2 de `configurar-cors.spec.ts`) |

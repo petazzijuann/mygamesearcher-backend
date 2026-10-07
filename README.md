@@ -36,6 +36,7 @@ Después crear el archivo `.env` copiando `.env.example` y completar los valores
 |---|---|---|
 | `NODE_ENV` | Entorno. Con `development` la API crea y actualiza las tablas sola | `development` |
 | `PORT` | Puerto de la API | `3000` |
+| `FRONTEND_URL` | Dirección del frontend que puede llamar a la API desde el navegador (CORS). Se pueden poner varias separadas por coma, por ejemplo la local y la publicada. Si no se define, se usa `http://localhost:5173` (Vite) | `http://localhost:5173,https://dgame.vercel.app` |
 | `DB_HOST` | Host de PostgreSQL | `aws-0-sa-east-1.pooler.supabase.com` o `localhost` |
 | `DB_PORT` | Puerto de PostgreSQL | `5432` |
 | `DB_USER` | Usuario de PostgreSQL (en el pooler de Supabase tiene la forma `postgres.<id-del-proyecto>`) | `postgres.abcdefghijk` |
@@ -106,6 +107,13 @@ Los tests no necesitan base de datos ni `.env`.
 | ADMIN | Además, crear, modificar y eliminar juegos y catálogos, listar usuarios y cambiar roles |
 
 Todas las respuestas de error tienen la forma `{ "statusCode", "message", "error" }`, con el mensaje en español.
+
+## Conexión con el frontend
+
+El frontend (repositorio `mygamesearcher-frontend`) llama a esta API desde el navegador usando la dirección de su variable `VITE_API_URL` (en desarrollo, `http://localhost:3000`). Para que el navegador permita esas llamadas, la dirección del frontend tiene que estar en `FRONTEND_URL` de este backend (CORS). Al publicar los dos:
+
+- en el backend, `FRONTEND_URL` con la dirección pública del frontend (y la local, si se sigue desarrollando);
+- en el frontend, `VITE_API_URL` con la dirección pública del backend.
 
 ## Estructura del proyecto
 
