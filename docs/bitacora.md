@@ -651,3 +651,53 @@
 | `GET /recomendaciones/1` después de borrarla | `404` `"No se encontró la búsqueda con id 1"` |
 | `GET /recomendaciones?usuarioId=1` después de borrarla | `200` con solo la búsqueda 2 |
 | Repetir `DELETE /recomendaciones/1` | `404` `"No se encontró la búsqueda con id 1"` |
+
+## Paso 14 - CRUD Usuario (2026-10-06)
+
+**Qué se hizo:** Se completó el CRUD de Usuario. Al registro y la consulta por id (Paso 7) se sumaron el listado (`GET /usuarios`), la edición de datos (`PATCH /usuarios/:id`), el cambio de contraseña (`PATCH /usuarios/:id/contrasena`) y la baja (`DELETE /usuarios/:id`).
+
+**Cómo se hizo:**
+- Rama `feature/crud-usuario` creada desde `dev`.
+- `src/usuario/dto/actualizar-usuario.dto.ts` (nuevo): `PartialType(OmitType(CrearUsuarioDto, ['contrasena']))`, es decir nombre, apellido, email y plataforma favorita, todos opcionales y con las mismas validaciones del registro.
+- `src/usuario/dto/cambiar-contrasena.dto.ts` (nuevo): `contrasenaActual` obligatoria y `contrasenaNueva` de 8 a 72 caracteres.
+- `src/usuario/usuario.service.ts`: métodos `listar`, `actualizar`, `cambiarContrasena` y `eliminar`. Se importó `compare` de bcryptjs.
+- `src/usuario/usuario.controller.ts`: rutas `GET /usuarios`, `PATCH /usuarios/:id`, `PATCH /usuarios/:id/contrasena` y `DELETE /usuarios/:id`.
+
+**Por qué:**
+- La contraseña se cambia en una ruta aparte y exige la contraseña actual, que se compara con el hash guardado (`compare` de bcryptjs). Hasta que haya login, es lo que impide que cualquiera cambie la contraseña de otro usuario. La nueva tiene las mismas reglas del registro y no puede ser igual a la actual. La respuesta es `204` sin contenido.
+- El `PATCH` de datos no acepta `contrasena` ni `rol`: el `whitelist` los descarta. El cambio de rol va a ser una acción de administrador con el login.
+- El email se normaliza a minúsculas (igual que en el registro) y no puede repetirse con otro usuario (`409`); guardar el propio email no es conflicto.
+- `"plataformaId": null` deja al usuario sin plataforma favorita; un id inexistente responde `400`.
+- El hash nunca sale en una respuesta: la columna tiene `select: false` y solo se pide explícitamente (`addSelect`) en el cambio de contraseña para compararlo. La nueva se guarda con `update()`, que modifica solo esa columna.
+- Si llega `"email": null` no se busca un duplicado (TypeORM 1.0 da error con `null` en el `where`); el `null` llega a la base, que lo rechaza, y el filtro global responde `400` "Falta un dato obligatorio".
+- La baja usa `delete()`: PostgreSQL borra en cascada las colecciones, búsquedas, recomendaciones y biblioteca del usuario. Los juegos no se tocan.
+- El listado y la baja van a quedar solo para administradores cuando se implemente el login; por ahora están abiertos como el resto de la API.
+- Nota para quien pruebe con scripts: el `fetch` de Node reutiliza conexiones, y Express cierra las que quedan inactivas más de 5 segundos. Si el script hace una pausa larga entre requests puede aparecer `ECONNRESET`; no es un error de la API (se resuelve reintentando). Con el navegador o Postman no pasa.
+
+**Requisito del TP que cubre:** CRUD Usuario (aprobación).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), dos plataformas (1 y 2) y dos usuarios: 1 (Ana Zapata, contraseña `claveVieja1`, plataforma 1) y 2 (Beto Alvarez, `beto@mail.com`):
+
+| Request | Respuesta esperada |
+|---|---|
+| `GET /usuarios` | `200` con Beto Alvarez y Ana Zapata (por apellido), con su plataforma y sin `contrasenaHash` |
+| `PATCH /usuarios/1` `{"nombre": "Anita", "email": "  ANITA@Mail.com "}` | `200` con `"nombre": "Anita"` y `"email": "anita@mail.com"` |
+| `PATCH /usuarios/1` `{"email": "beto@mail.com"}` | `409` `"Ya existe un usuario con el email 'beto@mail.com'"` |
+| `PATCH /usuarios/1` `{"email": "anita@mail.com"}` (su propio email) | `200` |
+| `PATCH /usuarios/1` `{"plataformaId": 2}` | `200` con la plataforma 2 |
+| `PATCH /usuarios/1` `{"plataformaId": null}` | `200` con `"plataforma": null` |
+| `PATCH /usuarios/1` `{"plataformaId": 9999}` | `400` `"No existe la plataforma con id 9999"` |
+| `PATCH /usuarios/1` `{"email": "no-es-email"}` | `400` `["El email no es válido"]` |
+| `PATCH /usuarios/1` `{"nombre": ""}` | `400` `["El nombre es obligatorio"]` |
+| `PATCH /usuarios/1` `{"email": null}` | `400` `"Falta un dato obligatorio"` |
+| `PATCH /usuarios/1` `{"rol": "ADMIN", "contrasena": "x"}` | `200`, se ignoran: el rol sigue siendo `USUARIO` y la contraseña no cambia |
+| `PATCH /usuarios/9999` | `404` `"No se encontró el usuario con id 9999"` |
+| `PATCH /usuarios/1/contrasena` `{"contrasenaActual": "claveVieja1", "contrasenaNueva": "claveNueva2"}` | `204` sin contenido; el hash en la base cambia |
+| `PATCH /usuarios/1/contrasena` con `"contrasenaActual": "cualquiera"` | `400` `"La contraseña actual es incorrecta"` |
+| `PATCH /usuarios/1/contrasena` `{"contrasenaActual": "claveNueva2", "contrasenaNueva": "claveNueva2"}` | `400` `"La contraseña nueva debe ser distinta de la actual"` |
+| `PATCH /usuarios/1/contrasena` con `"contrasenaNueva": "12345"` | `400` `["La contraseña nueva debe tener al menos 8 caracteres"]` |
+| `PATCH /usuarios/1/contrasena` `{}` | `400` `["La contraseña actual es obligatoria", "La contraseña nueva es obligatoria"]` |
+| `PATCH /usuarios/1/contrasena` con la contraseña vieja (`claveVieja1`) | `400` `"La contraseña actual es incorrecta"` |
+| `DELETE /usuarios/1` | `204` sin contenido; se borran en cascada su colección, búsqueda, recomendaciones y biblioteca |
+| `GET /usuarios/1` o repetir el `DELETE` | `404` `"No se encontró el usuario con id 1"` |
+| `GET /usuarios` | `200` con solo Beto Alvarez |
