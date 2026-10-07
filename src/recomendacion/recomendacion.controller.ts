@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
 import type { UsuarioToken } from '../auth/usuario-token.interface';
 import { idPipe } from '../comun/id.pipe';
@@ -19,11 +20,17 @@ import { GenerarRecomendacionDto } from './dto/generar-recomendacion.dto';
 import { RecomendacionService } from './recomendacion.service';
 
 // Todas las rutas piden sesión; el usuario sale del token
+@ApiTags('Recomendaciones')
+@ApiBearerAuth()
 @Controller('recomendaciones')
 export class RecomendacionController {
   constructor(private readonly recomendacionService: RecomendacionService) {}
 
   // CUU Generar recomendación personalizada
+  @ApiOperation({
+    summary:
+      'CUU Generar recomendación: de 1 a 3 juegos según los criterios, sin los YA_JUGADO (usuario con sesión)',
+  })
   @Post()
   generar(
     @Body() dto: GenerarRecomendacionDto,
@@ -33,6 +40,10 @@ export class RecomendacionController {
   }
 
   // Historial del usuario, filtrado por fecha (desde / hasta)
+  @ApiOperation({
+    summary:
+      'Ver mi historial de recomendaciones, con filtro opcional por fechas (usuario con sesión)',
+  })
   @Get()
   listar(
     @Query() filtro: FiltroHistorialDto,
@@ -42,6 +53,10 @@ export class RecomendacionController {
   }
 
   // Detalle de una búsqueda con sus recomendaciones
+  @ApiOperation({
+    summary:
+      'Ver el detalle de una búsqueda con sus recomendaciones (el dueño o un ADMIN)',
+  })
   @Get(':id')
   consultar(
     @Param('id', idPipe) id: number,
@@ -51,6 +66,10 @@ export class RecomendacionController {
   }
 
   // CUU Consultar historial: calificar un juego recomendado
+  @ApiOperation({
+    summary:
+      'Calificar de 1 a 5 un juego recomendado, con comentario opcional (el dueño o un ADMIN)',
+  })
   @Patch(':busquedaId/juegos/:juegoId')
   calificar(
     @Param('busquedaId', idPipe) busquedaId: number,
@@ -67,6 +86,9 @@ export class RecomendacionController {
   }
 
   // CUU Consultar historial: borrar una búsqueda del historial
+  @ApiOperation({
+    summary: 'Borrar una búsqueda del historial (el dueño o un ADMIN)',
+  })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   eliminar(

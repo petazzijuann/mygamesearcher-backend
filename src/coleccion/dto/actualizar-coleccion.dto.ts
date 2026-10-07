@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CrearColeccionDto } from './crear-coleccion.dto';
 
 // El dueño no se puede cambiar: sale del token al crear la colección

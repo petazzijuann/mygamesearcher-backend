@@ -3,21 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare } from 'bcryptjs';
 import { Repository } from 'typeorm';
-import { Rol } from '../usuario/rol.enum';
 import { Usuario } from '../usuario/usuario.entity';
 import { LoginDto } from './dto/login.dto';
+import { RespuestaLoginDto } from './dto/respuesta-login.dto';
 import { ContenidoToken } from './usuario-token.interface';
-
-export interface RespuestaLogin {
-  token: string;
-  usuario: {
-    id: number;
-    nombre: string;
-    apellido: string;
-    email: string;
-    rol: Rol;
-  };
-}
 
 @Injectable()
 export class AuthService {
@@ -27,7 +16,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(dto: LoginDto): Promise<RespuestaLogin> {
+  async login(dto: LoginDto): Promise<RespuestaLoginDto> {
     // El hash tiene select: false, así que se pide explícitamente solo para compararlo
     const usuario = await this.usuarioRepository
       .createQueryBuilder('usuario')

@@ -863,3 +863,41 @@
 |---|---|
 | `npm run test` | `Test Suites: 4 passed` y `Tests: 13 passed` (los 3 archivos nuevos y el de ejemplo `app.controller.spec.ts`) |
 | `npm run test:e2e` | `Test Suites: 1 passed` y `Tests: 6 passed` |
+
+## Paso 18 - Documentación de la API (2026-10-07)
+
+**Qué se hizo:** Se agregó la documentación interactiva de la API con Swagger (OpenAPI) en `/docs`. Muestra las 50 rutas agrupadas, con un resumen que indica quién puede usar cada una, los datos de entrada con sus validaciones, las respuestas, y permite probarlas desde el navegador cargando el token. También se actualizó `docs/README.md` con la instalación, la documentación, los tests y el enlace a esta bitácora.
+
+**Cómo se hizo:**
+- Rama `feature/documentacion-api` creada desde `dev`.
+- `npm install @nestjs/swagger` (versión 11.4.7, la que corresponde a NestJS 11).
+- `nest-cli.json`: se activó el plugin de `@nestjs/swagger` (`classValidatorShim` e `introspectComments`).
+- `src/comun/configurar-swagger.ts` (nuevo): `configurarSwagger(app)` arma el documento con título, descripción (cómo autenticarse, niveles de acceso y formato de los errores), versión y autenticación Bearer JWT, y lo publica en `/docs` (y el JSON en `/docs-json`) con `persistAuthorization` para no perder el token al recargar.
+- `src/main.ts`: llama a `configurarSwagger(app)` y muestra en la consola la dirección de la documentación.
+- Los 11 controllers: `@ApiTags(...)` para agruparlos, `@ApiBearerAuth()` en los que usan token y `@ApiOperation({ summary })` en cada una de las 50 rutas, con quién puede usarla (público, usuario con sesión, dueño o ADMIN, solo ADMIN).
+- DTOs de actualización: `PartialType` y `OmitType` se importan ahora de `@nestjs/swagger` en lugar de `@nestjs/mapped-types` (hacen lo mismo y además pasan los campos a la documentación).
+- `src/auth/dto/respuesta-login.dto.ts` (nuevo): la respuesta del login pasó de interface a clases (`RespuestaLoginDto` y `UsuarioLogin`), y `auth.service.ts` la usa.
+- Entidades: `@ApiHideProperty()` en `Usuario.contrasenaHash` y en la relación inversa `juegos` de género, plataforma, característica y clasificación de edad.
+- `docs/README.md`: secciones de instalación (variables del `.env`), documentación de la API, tests y bitácora.
+
+**Por qué:**
+- Swagger es el estándar para documentar APIs REST y NestJS lo integra oficialmente. La documentación sale del mismo código, así que no se desactualiza cuando cambia una ruta o una validación; además sirve para que el equipo del frontend vea y pruebe la API sin Postman.
+- El plugin lee los tipos de TypeScript y las validaciones de class-validator (máximos, mínimos, enums, formato de email o URL, obligatorios) y arma los esquemas solo, sin repetir decoradores en cada campo de cada DTO. También documenta las respuestas a partir de lo que devuelve cada método.
+- Los resúmenes de cada ruta dicen quién puede usarla, porque es lo primero que necesita saber quien consume la API; el formato común de los errores se explica una sola vez en la descripción general.
+- Se ocultó el hash de la contraseña en la documentación: la API nunca lo devuelve (Paso 7) y la documentación no debía dar a entender lo contrario. Lo mismo con las relaciones inversas `juegos` de los catálogos, que nunca se cargan en las respuestas.
+- La respuesta del login se pasó a clase porque el plugin solo puede documentar clases; con la interface aparecía como un objeto vacío.
+- `/docs` queda fuera de los guards (no es una ruta de un controller), así que se puede abrir sin iniciar sesión.
+
+**Requisito del TP que cubre:** Documentación de la API (aprobación).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`; la consola muestra `Documentación en http://localhost:3000/docs`):
+
+| Acción | Resultado esperado |
+|---|---|
+| Abrir `http://localhost:3000/docs` | Página de Swagger con los grupos Estado, Autenticación, Usuarios, Géneros, Plataformas, Características, Clasificaciones de edad, Juegos, Colecciones, Biblioteca y Recomendaciones |
+| Abrir `http://localhost:3000/docs-json` | Documento OpenAPI con las 50 rutas, todas con resumen |
+| Ver el esquema `CrearJuegoDto` | Campos con sus reglas (por ejemplo `anioLanzamiento` entre 1950 y el año actual, `plataformaIds` con al menos un elemento y sin repetidos) y cuáles son obligatorios |
+| Ver el esquema `Usuario` | Sin `contrasenaHash` |
+| `POST /auth/login` desde "Try it out" con el admin, copiar el `token` y pegarlo en **Authorize** | Las rutas protegidas (por ejemplo `POST /generos`) se pueden probar desde la página |
+| Probar `POST /generos` sin cargar el token | `401` `"Debe iniciar sesión"` |
+| `npm run test` y `npm run test:e2e` | Siguen pasando (13 y 6 tests) |

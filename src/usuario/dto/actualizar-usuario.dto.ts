@@ -1,4 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/swagger';
 import { CrearUsuarioDto } from './crear-usuario.dto';
 
 // Sin contraseña (se cambia en PATCH /usuarios/:id/contrasena); todos los campos opcionales.

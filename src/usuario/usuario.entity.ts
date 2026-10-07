@@ -6,6 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { ApiHideProperty } from '@nestjs/swagger';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { Rol } from './rol.enum';
 
@@ -24,6 +25,8 @@ export class Usuario {
   email: string;
 
   // select: false -> no se trae en ninguna consulta salvo que se pida explícitamente
+  // Nunca se devuelve en una respuesta: se oculta también en la documentación
+  @ApiHideProperty()
   @Column({ name: 'contrasena_hash', select: false })
   contrasenaHash: string;
 
