@@ -518,3 +518,60 @@
 | `POST /recomendaciones` con `"plataformaIds": [P1, P1]` | `400` `["Las plataformas no pueden repetirse"]` |
 | `DELETE /juegos/{Gamma}` y revisar las búsquedas en la base | Gamma desaparece de las recomendaciones de las búsquedas anteriores |
 | Borrar el usuario en la base (`DELETE FROM usuario WHERE id = 1`) | Se borran en cascada sus búsquedas, recomendaciones, colecciones y biblioteca |
+
+## Paso 11 - Listado de recomendaciones del usuario filtrado por fecha y detalle (2026-10-06)
+
+**Qué se hizo:** Se agregó el historial de recomendaciones del usuario (`GET /recomendaciones?usuarioId=...&desde=...&hasta=...`), con filtro opcional por rango de fechas, y el detalle de una búsqueda (`GET /recomendaciones/:id`). Con este paso se completa el alcance de la regularidad.
+
+**Cómo se hizo:**
+- Rama `feature/historial-recomendaciones` creada desde `dev`.
+- `src/comun/usuario-query.dto.ts`: se movió desde `src/juego-guardado/dto/` porque ahora lo usan la biblioteca y el historial. Se actualizaron los imports de `filtro-biblioteca.dto.ts` y `juego-guardado.controller.ts`.
+- `src/recomendacion/dto/filtro-historial.dto.ts` (nuevo): extiende `UsuarioQueryDto` y agrega `desde` y `hasta` opcionales, con formato `AAAA-MM-DD` (`@Matches`) y fecha existente (`@IsISO8601({ strict: true })`).
+- `src/recomendacion/recomendacion.service.ts`:
+  - `listar(filtro)` (nuevo): valida el usuario (`404`) y el rango (`400`), y arma la consulta con `QueryBuilder`.
+  - `buscarPorId(id)`: el antiguo método privado `buscarBusqueda` pasó a ser público con este nombre. Lo usan `generar` y el detalle.
+  - Constante `ZONA_HORARIA = 'America/Argentina/Buenos_Aires'`.
+- `src/recomendacion/recomendacion.controller.ts`: se agregaron `GET /recomendaciones` y `GET /recomendaciones/:id`.
+
+**Por qué:**
+- El listado devuelve búsquedas agrupadas (fecha, criterios y sus 1 a 3 recomendaciones) en lugar de recomendaciones sueltas, para ver juntos qué se pidió y qué se recomendó. Se ordena de la búsqueda más reciente a la más vieja, y dentro de cada una por `orden`.
+- En el listado, cada juego viene resumido (id, título, año e imagen) para que la respuesta no sea pesada. El detalle completo (descripción, clasificación, plataformas, géneros y características) está en `GET /recomendaciones/:id`, que devuelve lo mismo que el `POST`.
+- Las búsquedas que se quedaron sin recomendaciones (porque se borraron todos sus juegos, ver Paso 10) no aparecen en el listado: se usa `innerJoin` con las recomendaciones. El detalle por id sí las devuelve, con la lista vacía.
+- Las fechas se reciben solo como fecha (`AAAA-MM-DD`), sin hora. `strict` rechaza fechas inexistentes como `2026-02-30`. Que `desde` no sea posterior a `hasta` se controla en el service porque compara dos campos.
+- Los dos extremos del rango son días completos: `desde` toma desde las 00:00 y `hasta` hasta antes de las 00:00 del día siguiente.
+- Zona horaria: la base guarda las fechas en UTC, así que una búsqueda hecha el 5/10 a las 23:30 en Argentina queda como 6/10 02:30 UTC. Si se filtrara en UTC, aparecería en el día equivocado. PostgreSQL convierte los límites a hora de Argentina con `AT TIME ZONE`. Las fechas y la zona van como parámetros de la consulta, no concatenadas en el SQL.
+- Las fechas se devuelven en UTC (formato ISO con `Z`): el frontend las muestra en hora local (con `new Date(...)` la conversión es automática).
+- Sin resultados se responde `200` con `[]`. Si el usuario no existe, `404`, igual que en la biblioteca.
+- El detalle todavía no controla que la búsqueda sea del usuario que la consulta; se agrega con el login.
+
+**Requisito del TP que cubre:** Listado de recomendaciones del usuario filtrado por fecha y detalle (regularidad).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), generar búsquedas con `POST /recomendaciones` y, para probar fechas distintas, cambiarlas en la base (`UPDATE busqueda SET fecha_busqueda = '...' WHERE id = ...`). Escenario usado (usuario 1 salvo b5, que es del usuario 2):
+
+| Búsqueda | Fecha en Argentina | Fecha en UTC (base) |
+|---|---|---|
+| b1 | 01/10 12:00 | 2026-10-01T15:00:00Z |
+| b2 | 03/10 12:00 | 2026-10-03T15:00:00Z |
+| b3 | 05/10 23:30 | 2026-10-06T02:30:00Z |
+| b4 | 06/10 00:30 | 2026-10-06T03:30:00Z |
+| b5 (usuario 2) | 03/10 12:00 | 2026-10-03T15:00:00Z |
+| b6 (sin recomendaciones) | 04/10 12:00 | 2026-10-04T15:00:00Z |
+
+| Request | Respuesta esperada |
+|---|---|
+| `GET /recomendaciones?usuarioId=1` | `200` con b4, b3, b2, b1 (b6 no aparece) |
+| `GET /recomendaciones?usuarioId=1&desde=2026-10-03` | `200` con b4, b3, b2 |
+| `GET /recomendaciones?usuarioId=1&hasta=2026-10-05` | `200` con b3, b2, b1 (b3 es del 5/10 en hora de Argentina) |
+| `GET /recomendaciones?usuarioId=1&desde=2026-10-05&hasta=2026-10-05` | `200` con solo b3 |
+| `GET /recomendaciones?usuarioId=1&desde=2026-10-06` | `200` con solo b4 |
+| `GET /recomendaciones?usuarioId=1&desde=2026-10-06&hasta=2026-10-01` | `400` `"La fecha desde no puede ser posterior a la fecha hasta"` |
+| `GET /recomendaciones?usuarioId=1&desde=2026-02-30` | `400` `["La fecha desde no es una fecha válida"]` |
+| `GET /recomendaciones?usuarioId=1&desde=06/10/2026` | `400` `["La fecha desde debe tener el formato AAAA-MM-DD"]` |
+| `GET /recomendaciones` | `400` `["El usuario es obligatorio"]` |
+| `GET /recomendaciones?usuarioId=9999` | `404` `"No se encontró el usuario con id 9999"` |
+| `GET /recomendaciones?usuarioId=2` | `200` con solo b5 |
+| `GET /recomendaciones?usuarioId=1&desde=2025-01-01&hasta=2025-12-31` | `200` `[]` |
+| `GET /recomendaciones/{b1}` | `200` con los criterios y las recomendaciones con el juego completo |
+| `GET /recomendaciones/9999` | `404` `"No se encontró la búsqueda con id 9999"` |
+| `GET /recomendaciones/{b6}` | `200` con `"recomendaciones": []` |
+| `GET /biblioteca` (sin `usuarioId`) | `400` `["El usuario es obligatorio"]` (la biblioteca sigue funcionando con el DTO movido a `src/comun/`) |

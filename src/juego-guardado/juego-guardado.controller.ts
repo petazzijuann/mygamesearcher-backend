@@ -11,10 +11,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { idPipe } from '../comun/id.pipe';
+import { UsuarioQueryDto } from '../comun/usuario-query.dto';
 import { CambiarEstadoDto } from './dto/cambiar-estado.dto';
 import { FiltroBibliotecaDto } from './dto/filtro-biblioteca.dto';
 import { GuardarJuegoDto } from './dto/guardar-juego.dto';
-import { UsuarioQueryDto } from './dto/usuario-query.dto';
 import { JuegoGuardadoService } from './juego-guardado.service';
 
 // CUU Administrar biblioteca personal

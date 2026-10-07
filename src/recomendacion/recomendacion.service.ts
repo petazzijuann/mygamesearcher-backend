@@ -13,7 +13,12 @@ import { Juego } from '../juego/juego.entity';
 import { EstadoJuego } from '../juego-guardado/estado-juego.enum';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { Usuario } from '../usuario/usuario.entity';
+import { FiltroHistorialDto } from './dto/filtro-historial.dto';
 import { GenerarRecomendacionDto } from './dto/generar-recomendacion.dto';
+
+// Las fechas del filtro del historial se interpretan en hora de Argentina
+// (la base guarda en UTC: una búsqueda del 6/10 a las 22:00 queda como 7/10 01:00 UTC)
+const ZONA_HORARIA = 'America/Argentina/Buenos_Aires';
 
 // Cantidad máxima de juegos recomendados por búsqueda
 const MAXIMO_RECOMENDACIONES = 3;
@@ -113,7 +118,76 @@ export class RecomendacionService {
     const guardada = await this.busquedaRepository.save(busqueda);
 
     // 7. Devolver la búsqueda con sus recomendaciones ordenadas
-    return this.buscarBusqueda(guardada.id);
+    return this.buscarPorId(guardada.id);
+  }
+
+  // Historial del usuario: búsquedas con al menos una recomendación, de la más reciente a la más vieja
+  async listar(filtro: FiltroHistorialDto): Promise<Busqueda[]> {
+    const { usuarioId, desde, hasta } = filtro;
+    if (!(await this.usuarioRepository.existsBy({ id: usuarioId }))) {
+      throw new NotFoundException(
+        `No se encontró el usuario con id ${usuarioId}`,
+      );
+    }
+    // Las fechas AAAA-MM-DD se pueden comparar como texto
+    if (desde && hasta && desde > hasta) {
+      throw new BadRequestException(
+        'La fecha desde no puede ser posterior a la fecha hasta',
+      );
+    }
+
+    const consulta = this.busquedaRepository
+      .createQueryBuilder('busqueda')
+      // innerJoin: deja afuera las búsquedas que se quedaron sin recomendaciones
+      .innerJoinAndSelect('busqueda.recomendaciones', 'recomendacion')
+      // Del juego solo se trae un resumen; el detalle completo está en GET /recomendaciones/:id
+      .innerJoin('recomendacion.juego', 'juego')
+      .addSelect([
+        'juego.id',
+        'juego.titulo',
+        'juego.anioLanzamiento',
+        'juego.imagenUrl',
+      ])
+      .leftJoinAndSelect('busqueda.plataformas', 'plataforma')
+      .leftJoinAndSelect('busqueda.generos', 'genero')
+      .leftJoinAndSelect('busqueda.caracteristicas', 'caracteristica')
+      .where('busqueda.usuario_id = :usuarioId', { usuarioId })
+      .orderBy('busqueda.fechaBusqueda', 'DESC')
+      .addOrderBy('recomendacion.orden', 'ASC');
+
+    // desde: a partir de las 00:00 de ese día (hora de Argentina)
+    if (desde) {
+      consulta.andWhere(
+        'busqueda.fecha_busqueda >= (CAST(:desde AS date)::timestamp AT TIME ZONE :zona)',
+        { desde, zona: ZONA_HORARIA },
+      );
+    }
+    // hasta: antes de las 00:00 del día siguiente, así el día de hasta entra completo
+    if (hasta) {
+      consulta.andWhere(
+        'busqueda.fecha_busqueda < ((CAST(:hasta AS date) + 1)::timestamp AT TIME ZONE :zona)',
+        { hasta, zona: ZONA_HORARIA },
+      );
+    }
+    return consulta.getMany();
+  }
+
+  // Detalle de una búsqueda: criterios y recomendaciones con los datos completos de cada juego
+  async buscarPorId(id: number): Promise<Busqueda> {
+    const busqueda = await this.busquedaRepository.findOne({
+      where: { id },
+      relations: {
+        plataformas: true,
+        generos: true,
+        caracteristicas: true,
+        recomendaciones: { juego: RELACIONES_JUEGO },
+      },
+      order: { recomendaciones: { orden: 'ASC' } },
+    });
+    if (!busqueda) {
+      throw new NotFoundException(`No se encontró la búsqueda con id ${id}`);
+    }
+    return busqueda;
   }
 
   // Juegos en alguna de las plataformas y con alguno de los géneros elegidos,
@@ -171,22 +245,5 @@ export class RecomendacionService {
       generosEnComun * PUNTOS_POR_GENERO +
       caracteristicasEnComun * PUNTOS_POR_CARACTERISTICA
     );
-  }
-
-  private async buscarBusqueda(id: number): Promise<Busqueda> {
-    const busqueda = await this.busquedaRepository.findOne({
-      where: { id },
-      relations: {
-        plataformas: true,
-        generos: true,
-        caracteristicas: true,
-        recomendaciones: { juego: RELACIONES_JUEGO },
-      },
-      order: { recomendaciones: { orden: 'ASC' } },
-    });
-    if (!busqueda) {
-      throw new NotFoundException(`No se encontró la búsqueda con id ${id}`);
-    }
-    return busqueda;
   }
 }
