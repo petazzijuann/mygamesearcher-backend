@@ -778,3 +778,57 @@
 | `PATCH /usuarios/{id}/rol` con token de USUARIO | `403` |
 | `GET /colecciones`, `GET /biblioteca`, `POST /recomendaciones` sin token | `401` `"Debe iniciar sesión"` |
 | Volver a arrancar la API con el admin ya creado | No crea otro administrador ni muestra el mensaje |
+
+## Paso 16 - Usuario desde el token (2026-10-06)
+
+**Qué se hizo:** En colecciones, biblioteca y recomendaciones se eliminó el `usuarioId` temporal (que venía en el body o en el query string desde los Pasos 7, 9 y 10): ahora el usuario sale siempre del token. Cada usuario ve y modifica solo lo suyo; un ADMIN puede además consultar o modificar un recurso puntual de otro usuario por su id.
+
+**Cómo se hizo:**
+- Rama `feature/usuario-desde-token` creada desde `dev`.
+- Colecciones:
+  - `dto/crear-coleccion.dto.ts`: sin `usuarioId`. `dto/actualizar-coleccion.dto.ts`: pasó a `PartialType(CrearColeccionDto)`.
+  - `coleccion.service.ts`: todos los métodos reciben `usuarioActual`. El detalle pasó a llamarse `consultar`; `buscarPorId` quedó privado y se agregó `buscarConAcceso` (404 si no existe, 403 si es de otro).
+  - `coleccion.controller.ts`: todas las rutas usan `@UsuarioActual()`; `GET /colecciones` ya no recibe query.
+- Biblioteca:
+  - `dto/guardar-juego.dto.ts` (solo `juegoId` y `estado`), `dto/cambiar-estado.dto.ts` (solo `estado`), `dto/filtro-biblioteca.dto.ts` (solo `estado` opcional).
+  - `juego-guardado.service.ts` y `juego-guardado.controller.ts`: el `usuarioId` lo pasa el controller desde el token.
+- Recomendaciones:
+  - `dto/generar-recomendacion.dto.ts`: sin `usuarioId`. `dto/filtro-historial.dto.ts`: solo `desde` y `hasta`.
+  - `recomendacion.service.ts`: `generar` y `listar` usan el usuario del token; el detalle pasó a llamarse `consultar` y verifica el dueño; `calificar` y `eliminar` también lo verifican con el nuevo privado `buscarDuenio` (reemplaza a `validarBusquedaExiste`). `buscarPorId` quedó privado y carga además la relación `usuario`.
+  - `recomendacion.controller.ts`: todas las rutas usan `@UsuarioActual()`.
+- Se borraron `src/coleccion/dto/filtro-colecciones.dto.ts` y `src/comun/usuario-query.dto.ts`, que ya no se usaban.
+
+**Por qué:**
+- Con el `usuarioId` en el pedido, cualquier usuario con sesión podía mandar el id de otro. Tomándolo del token, la API sabe quién es sin confiar en lo que llega en el body. Si alguien igual lo manda, el `whitelist` lo descarta.
+- Los listados (`GET /colecciones`, `GET /biblioteca`, `GET /recomendaciones`) muestran siempre lo del propio usuario, también si es ADMIN, porque son datos personales. Un ADMIN sí puede consultar, modificar o borrar un recurso puntual de otro por su id (por ejemplo, para moderar), con `verificarAcceso` (Paso 15).
+- En las rutas por id primero se busca el recurso y después se controla el dueño: si no existe responde `404`, y si es de otro `403`.
+- En la biblioteca las rutas son por `juegoId` y operan siempre sobre la biblioteca del usuario del token: si el juego no está en **su** biblioteca responde `404`, aunque otro usuario lo tenga guardado.
+- Si el usuario del token fue borrado, crear una colección, guardar en la biblioteca o generar una recomendación responde `401` "La sesión no es válida o expiró". No se agregó una consulta a la base en cada pedido para detectarlo antes: el caso es raro y ese usuario tampoco puede ver nada, porque sus datos se borraron en cascada.
+- El detalle de una búsqueda incluye ahora los datos básicos del usuario (sin hash), porque hace falta cargar la relación para saber quién es el dueño.
+- Desde este paso, las requests de ejemplo de los Pasos 7, 9, 10, 11, 12 y 13 se usan **sin** `usuarioId` y con el token del usuario en el header `Authorization: Bearer <token>`.
+
+**Requisito del TP que cubre:** Login con 2 niveles de acceso y protección de rutas (aprobación): cada usuario accede solo a sus colecciones, biblioteca e historial.
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), el admin y algunos juegos cargados, registrar dos usuarios (U1 y U2) y obtener sus tokens con `POST /auth/login`:
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /colecciones` `{"nombre": "Favoritos", "juegoIds": [1]}` con token de U1 | `201`, la colección queda a nombre de U1 |
+| `POST /colecciones` `{"nombre": "Pendientes", "usuarioId": <id de U2>}` con token de U1 | `201`, igual a nombre de U1 (el `usuarioId` se ignora) |
+| `POST /colecciones` `{"nombre": "Favoritos"}` con token de U2 | `201` (el nombre no choca con la de otro usuario) |
+| `GET /colecciones` con token de U1 / de U2 / del admin | `200`, cada uno solo con las suyas (el admin, `[]`) |
+| `GET`, `PATCH`, `DELETE /colecciones/{de U1}` y `POST`/`DELETE` de sus juegos con token de U2 | `403` `"No tiene permiso para acceder a este recurso"` |
+| `GET /colecciones/{de U1}` con token del admin | `200` |
+| `GET /colecciones/9999` | `404` `"No se encontró la colección con id 9999"` |
+| `GET /colecciones?usuarioId=<id de U2>` con token de U1 | `200` solo con las de U1 |
+| `POST /biblioteca` `{"juegoId": 1, "estado": "YA_JUGADO"}` con token de U1 | `201` |
+| `GET /biblioteca` con token de U1 / de U2 | `200` con el juego 1 / `[]` |
+| `PATCH /biblioteca/1` `{"estado": "ME_INTERESA"}` o `DELETE /biblioteca/1` con token de U2 | `404` `"El juego no está en la biblioteca del usuario"` |
+| `PATCH /biblioteca/1` `{"estado": "ME_INTERESA"}` con token de U1 | `200` |
+| `POST /recomendaciones` `{"plataformaIds": [1], "generoIds": [1]}` con token de U1 | `201`; no recomienda los juegos que U1 marcó como `YA_JUGADO` |
+| `GET /recomendaciones`, `GET /recomendaciones/{id}` y `PATCH /recomendaciones/{id}/juegos/{juegoId}` con token de U1 | `200`; el detalle incluye el usuario sin hash |
+| `GET`, `PATCH` o `DELETE` de esa búsqueda con token de U2 | `403` `"No tiene permiso para acceder a este recurso"` |
+| `GET /recomendaciones` con token de U2 | `200` `[]` |
+| `GET /recomendaciones/{de U1}` con token del admin | `200` |
+| `DELETE /recomendaciones/{id}` con token de U1 | `204` |
+| Con el token de un usuario que se borró: `POST /colecciones`, `POST /biblioteca` o `POST /recomendaciones` | `401` `"La sesión no es válida o expiró"` |

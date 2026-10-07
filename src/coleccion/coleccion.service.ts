@@ -3,9 +3,12 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { UsuarioToken } from '../auth/usuario-token.interface';
+import { verificarAcceso } from '../auth/verificar-acceso';
 import { buscarPorIds } from '../comun/buscar-por-ids';
 import { Juego } from '../juego/juego.entity';
 import { Usuario } from '../usuario/usuario.entity';
@@ -27,10 +30,14 @@ export class ColeccionService {
     private readonly juegoRepository: Repository<Juego>,
   ) {}
 
-  async crear(dto: CrearColeccionDto): Promise<Coleccion> {
-    const { usuarioId, juegoIds, ...datos } = dto;
-    const usuario = await this.buscarUsuario(usuarioId);
-    await this.validarNombreDisponible(usuarioId, datos.nombre);
+  // La colección se crea siempre a nombre del usuario del token
+  async crear(
+    dto: CrearColeccionDto,
+    usuarioActual: UsuarioToken,
+  ): Promise<Coleccion> {
+    const { juegoIds, ...datos } = dto;
+    const usuario = await this.buscarUsuario(usuarioActual.id);
+    await this.validarNombreDisponible(usuario.id, datos.nombre);
 
     const coleccion = this.coleccionRepository.create(datos);
     coleccion.usuario = usuario;
@@ -43,30 +50,26 @@ export class ColeccionService {
     return this.buscarPorId(guardada.id);
   }
 
-  listar(usuarioId?: number): Promise<Coleccion[]> {
+  // Solo las colecciones del propio usuario (también si es ADMIN)
+  listar(usuarioActual: UsuarioToken): Promise<Coleccion[]> {
     return this.coleccionRepository.find({
-      where: usuarioId !== undefined ? { usuario: { id: usuarioId } } : {},
+      where: { usuario: { id: usuarioActual.id } },
       relations: RELACIONES,
       order: { nombre: 'ASC' },
     });
   }
 
-  async buscarPorId(id: number): Promise<Coleccion> {
-    const coleccion = await this.coleccionRepository.findOne({
-      where: { id },
-      relations: RELACIONES,
-    });
-    if (!coleccion) {
-      throw new NotFoundException(`No se encontró la colección con id ${id}`);
-    }
-    return coleccion;
+  // Detalle: el dueño o un ADMIN
+  consultar(id: number, usuarioActual: UsuarioToken): Promise<Coleccion> {
+    return this.buscarConAcceso(id, usuarioActual);
   }
 
   async actualizar(
     id: number,
     dto: ActualizarColeccionDto,
+    usuarioActual: UsuarioToken,
   ): Promise<Coleccion> {
-    const coleccion = await this.buscarPorId(id);
+    const coleccion = await this.buscarConAcceso(id, usuarioActual);
     const { juegoIds, ...datos } = dto;
 
     if (datos.nombre !== undefined) {
@@ -90,14 +93,18 @@ export class ColeccionService {
     return this.buscarPorId(id);
   }
 
-  async eliminar(id: number): Promise<void> {
-    const coleccion = await this.buscarPorId(id);
+  async eliminar(id: number, usuarioActual: UsuarioToken): Promise<void> {
+    const coleccion = await this.buscarConAcceso(id, usuarioActual);
     await this.coleccionRepository.remove(coleccion);
   }
 
   // CUU Administrar colección: agregar un juego
-  async agregarJuego(id: number, juegoId: number): Promise<Coleccion> {
-    const coleccion = await this.buscarPorId(id);
+  async agregarJuego(
+    id: number,
+    juegoId: number,
+    usuarioActual: UsuarioToken,
+  ): Promise<Coleccion> {
+    const coleccion = await this.buscarConAcceso(id, usuarioActual);
     // El juego viene en el body: si no existe, el pedido es incorrecto (400)
     if (!(await this.juegoRepository.existsBy({ id: juegoId }))) {
       throw new BadRequestException(`No existe el juego con id ${juegoId}`);
@@ -115,8 +122,12 @@ export class ColeccionService {
   }
 
   // CUU Administrar colección: quitar un juego
-  async quitarJuego(id: number, juegoId: number): Promise<void> {
-    const coleccion = await this.buscarPorId(id);
+  async quitarJuego(
+    id: number,
+    juegoId: number,
+    usuarioActual: UsuarioToken,
+  ): Promise<void> {
+    const coleccion = await this.buscarConAcceso(id, usuarioActual);
     if (!coleccion.juegos.some((juego) => juego.id === juegoId)) {
       throw new NotFoundException('El juego no está en la colección');
     }
@@ -128,10 +139,33 @@ export class ColeccionService {
       .remove(juegoId);
   }
 
+  // Sin control de acceso: lo usan los otros métodos para devolver la colección actualizada
+  private async buscarPorId(id: number): Promise<Coleccion> {
+    const coleccion = await this.coleccionRepository.findOne({
+      where: { id },
+      relations: RELACIONES,
+    });
+    if (!coleccion) {
+      throw new NotFoundException(`No se encontró la colección con id ${id}`);
+    }
+    return coleccion;
+  }
+
+  // 404 si no existe; 403 si es de otro usuario y el que pide no es ADMIN
+  private async buscarConAcceso(
+    id: number,
+    usuarioActual: UsuarioToken,
+  ): Promise<Coleccion> {
+    const coleccion = await this.buscarPorId(id);
+    verificarAcceso(usuarioActual, coleccion.usuario.id);
+    return coleccion;
+  }
+
+  // Si el usuario del token ya no existe (se borró), la sesión no sirve
   private async buscarUsuario(id: number): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOneBy({ id });
     if (!usuario) {
-      throw new BadRequestException(`No existe el usuario con id ${id}`);
+      throw new UnauthorizedException('La sesión no es válida o expiró');
     }
     return usuario;
   }

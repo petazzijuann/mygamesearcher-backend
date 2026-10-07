@@ -2,9 +2,12 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { UsuarioToken } from '../auth/usuario-token.interface';
+import { verificarAcceso } from '../auth/verificar-acceso';
 import { Busqueda } from '../busqueda/busqueda.entity';
 import { Caracteristica } from '../caracteristica/caracteristica.entity';
 import { buscarPorIds } from '../comun/buscar-por-ids';
@@ -56,15 +59,20 @@ export class RecomendacionService {
     private readonly caracteristicaRepository: Repository<Caracteristica>,
   ) {}
 
-  // CUU Generar recomendación personalizada
-  async generar(dto: GenerarRecomendacionDto): Promise<Busqueda> {
-    const { usuarioId, plataformaIds, generoIds } = dto;
+  // CUU Generar recomendación personalizada: la búsqueda queda a nombre del usuario del token
+  async generar(
+    dto: GenerarRecomendacionDto,
+    usuarioActual: UsuarioToken,
+  ): Promise<Busqueda> {
+    const usuarioId = usuarioActual.id;
+    const { plataformaIds, generoIds } = dto;
     const caracteristicaIds = dto.caracteristicaIds ?? [];
 
-    // 1. Validar los datos del body
+    // 1. Validar el usuario y los datos del body
     const usuario = await this.usuarioRepository.findOneBy({ id: usuarioId });
     if (!usuario) {
-      throw new BadRequestException(`No existe el usuario con id ${usuarioId}`);
+      // El usuario del token ya no existe (se borró): la sesión no sirve
+      throw new UnauthorizedException('La sesión no es válida o expiró');
     }
     const plataformas = await buscarPorIds(
       this.plataformaRepository,
@@ -125,14 +133,14 @@ export class RecomendacionService {
     return this.buscarPorId(guardada.id);
   }
 
-  // Historial del usuario: búsquedas con al menos una recomendación, de la más reciente a la más vieja
-  async listar(filtro: FiltroHistorialDto): Promise<Busqueda[]> {
-    const { usuarioId, desde, hasta } = filtro;
-    if (!(await this.usuarioRepository.existsBy({ id: usuarioId }))) {
-      throw new NotFoundException(
-        `No se encontró el usuario con id ${usuarioId}`,
-      );
-    }
+  // Historial del propio usuario (también si es ADMIN): búsquedas con al menos una recomendación,
+  // de la más reciente a la más vieja
+  listar(
+    filtro: FiltroHistorialDto,
+    usuarioActual: UsuarioToken,
+  ): Promise<Busqueda[]> {
+    const usuarioId = usuarioActual.id;
+    const { desde, hasta } = filtro;
     // Las fechas AAAA-MM-DD se pueden comparar como texto
     if (desde && hasta && desde > hasta) {
       throw new BadRequestException(
@@ -176,11 +184,20 @@ export class RecomendacionService {
     return consulta.getMany();
   }
 
-  // Detalle de una búsqueda: criterios y recomendaciones con los datos completos de cada juego
-  async buscarPorId(id: number): Promise<Busqueda> {
+  // Detalle de una búsqueda: el dueño o un ADMIN
+  async consultar(id: number, usuarioActual: UsuarioToken): Promise<Busqueda> {
+    const busqueda = await this.buscarPorId(id);
+    verificarAcceso(usuarioActual, busqueda.usuario.id);
+    return busqueda;
+  }
+
+  // Criterios y recomendaciones con los datos completos de cada juego.
+  // Incluye el usuario (sin hash) para saber quién es el dueño
+  private async buscarPorId(id: number): Promise<Busqueda> {
     const busqueda = await this.busquedaRepository.findOne({
       where: { id },
       relations: {
+        usuario: true,
         plataformas: true,
         generos: true,
         caracteristicas: true,
@@ -199,8 +216,9 @@ export class RecomendacionService {
     busquedaId: number,
     juegoId: number,
     dto: CalificarRecomendacionDto,
+    usuarioActual: UsuarioToken,
   ): Promise<Recomendacion> {
-    await this.validarBusquedaExiste(busquedaId);
+    verificarAcceso(usuarioActual, await this.buscarDuenio(busquedaId));
     const recomendacion = await this.recomendacionRepository.findOne({
       where: { busqueda: { id: busquedaId }, juego: { id: juegoId } },
       relations: { juego: RELACIONES_JUEGO },
@@ -221,16 +239,22 @@ export class RecomendacionService {
   }
 
   // CUU Consultar historial: borrar una búsqueda con sus recomendaciones
-  async eliminar(id: number): Promise<void> {
-    await this.validarBusquedaExiste(id);
+  async eliminar(id: number, usuarioActual: UsuarioToken): Promise<void> {
+    verificarAcceso(usuarioActual, await this.buscarDuenio(id));
     // DELETE directo: Postgres borra en cascada las recomendaciones y los criterios
     await this.busquedaRepository.delete(id);
   }
 
-  private async validarBusquedaExiste(id: number): Promise<void> {
-    if (!(await this.busquedaRepository.existsBy({ id }))) {
+  // Id del usuario dueño de la búsqueda; 404 si la búsqueda no existe
+  private async buscarDuenio(id: number): Promise<number> {
+    const busqueda = await this.busquedaRepository.findOne({
+      where: { id },
+      relations: { usuario: true },
+    });
+    if (!busqueda) {
       throw new NotFoundException(`No se encontró la búsqueda con id ${id}`);
     }
+    return busqueda.usuario.id;
   }
 
   // Juegos en alguna de las plataformas y con alguno de los géneros elegidos,

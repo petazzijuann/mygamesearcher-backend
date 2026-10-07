@@ -2,7 +2,6 @@ import { Transform } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
-  IsDefined,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -14,14 +13,10 @@ import {
 const recortar = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 
+// El dueño de la colección sale del token, no del body.
 // class-validator ejecuta los decoradores de abajo hacia arriba,
 // por eso en cada campo la validación más básica va última
 export class CrearColeccionDto {
-  // Temporal: cuando haya login, el usuario sale del token
-  @IsInt({ message: 'El usuario debe ser un id entero' })
-  @IsDefined({ message: 'El usuario es obligatorio' })
-  usuarioId: number;
-
   @Transform(recortar)
   @MaxLength(100, { message: 'El nombre no puede superar los 100 caracteres' })
   @IsString({ message: 'El nombre debe ser un texto' })

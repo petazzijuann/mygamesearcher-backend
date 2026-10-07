@@ -7,15 +7,10 @@ import {
   IsOptional,
 } from 'class-validator';
 
-// Criterios de búsqueda para generar una recomendación.
+// Criterios de búsqueda para generar una recomendación (el usuario sale del token).
 // class-validator ejecuta los decoradores de abajo hacia arriba,
 // por eso en cada campo la validación más básica va última
 export class GenerarRecomendacionDto {
-  // Temporal: cuando haya login, el usuario sale del token
-  @IsInt({ message: 'El usuario debe ser un id entero' })
-  @IsDefined({ message: 'El usuario es obligatorio' })
-  usuarioId: number;
-
   @IsInt({
     each: true,
     message: 'Cada id de plataforma debe ser un número entero',

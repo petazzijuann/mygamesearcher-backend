@@ -8,52 +8,67 @@ import {
   Param,
   Patch,
   Post,
-  Query,
 } from '@nestjs/common';
+import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
+import type { UsuarioToken } from '../auth/usuario-token.interface';
 import { idPipe } from '../comun/id.pipe';
 import { ColeccionService } from './coleccion.service';
 import { ActualizarColeccionDto } from './dto/actualizar-coleccion.dto';
 import { AgregarJuegoDto } from './dto/agregar-juego.dto';
 import { CrearColeccionDto } from './dto/crear-coleccion.dto';
-import { FiltroColeccionesDto } from './dto/filtro-colecciones.dto';
 
+// Todas las rutas piden sesión; el usuario sale del token
 @Controller('colecciones')
 export class ColeccionController {
   constructor(private readonly coleccionService: ColeccionService) {}
 
   @Post()
-  crear(@Body() dto: CrearColeccionDto) {
-    return this.coleccionService.crear(dto);
+  crear(
+    @Body() dto: CrearColeccionDto,
+    @UsuarioActual() usuarioActual: UsuarioToken,
+  ) {
+    return this.coleccionService.crear(dto, usuarioActual);
   }
 
   @Get()
-  listar(@Query() filtro: FiltroColeccionesDto) {
-    return this.coleccionService.listar(filtro.usuarioId);
+  listar(@UsuarioActual() usuarioActual: UsuarioToken) {
+    return this.coleccionService.listar(usuarioActual);
   }
 
   @Get(':id')
-  buscarPorId(@Param('id', idPipe) id: number) {
-    return this.coleccionService.buscarPorId(id);
+  consultar(
+    @Param('id', idPipe) id: number,
+    @UsuarioActual() usuarioActual: UsuarioToken,
+  ) {
+    return this.coleccionService.consultar(id, usuarioActual);
   }
 
   @Patch(':id')
   actualizar(
     @Param('id', idPipe) id: number,
     @Body() dto: ActualizarColeccionDto,
+    @UsuarioActual() usuarioActual: UsuarioToken,
   ) {
-    return this.coleccionService.actualizar(id, dto);
+    return this.coleccionService.actualizar(id, dto, usuarioActual);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  eliminar(@Param('id', idPipe) id: number) {
-    return this.coleccionService.eliminar(id);
+  eliminar(
+    @Param('id', idPipe) id: number,
+    @UsuarioActual() usuarioActual: UsuarioToken,
+  ) {
+    return this.coleccionService.eliminar(id, usuarioActual);
   }
 
   // CUU Administrar colección: agregar y quitar juegos de a uno
   @Post(':id/juegos')
-  agregarJuego(@Param('id', idPipe) id: number, @Body() dto: AgregarJuegoDto) {
-    return this.coleccionService.agregarJuego(id, dto.juegoId);
+  agregarJuego(
+    @Param('id', idPipe) id: number,
+    @Body() dto: AgregarJuegoDto,
+    @UsuarioActual() usuarioActual: UsuarioToken,
+  ) {
+    return this.coleccionService.agregarJuego(id, dto.juegoId, usuarioActual);
   }
 
   @Delete(':id/juegos/:juegoId')
@@ -61,7 +76,8 @@ export class ColeccionController {
   quitarJuego(
     @Param('id', idPipe) id: number,
     @Param('juegoId', idPipe) juegoId: number,
+    @UsuarioActual() usuarioActual: UsuarioToken,
   ) {
-    return this.coleccionService.quitarJuego(id, juegoId);
+    return this.coleccionService.quitarJuego(id, juegoId, usuarioActual);
   }
 }

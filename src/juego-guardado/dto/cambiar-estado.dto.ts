@@ -1,8 +1,12 @@
-import { PickType } from '@nestjs/mapped-types';
-import { GuardarJuegoDto } from './guardar-juego.dto';
+import { IsDefined, IsEnum } from 'class-validator';
+import { EstadoJuego } from '../estado-juego.enum';
 
-// El juego viene en la URL; en el body solo el usuario y el nuevo estado (ambos obligatorios)
-export class CambiarEstadoDto extends PickType(GuardarJuegoDto, [
-  'usuarioId',
-  'estado',
-] as const) {}
+// Body de PATCH /biblioteca/:juegoId: el juego viene en la URL y el usuario sale del token.
+// class-validator ejecuta los decoradores de abajo hacia arriba
+export class CambiarEstadoDto {
+  @IsEnum(EstadoJuego, {
+    message: 'El estado debe ser ME_INTERESA o YA_JUGADO',
+  })
+  @IsDefined({ message: 'El estado es obligatorio' })
+  estado: EstadoJuego;
+}
