@@ -1,0 +1,4278 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verificar que la API está funcionando (público)",
+        "tags": [
+          "Estado"
+        ]
+      }
+    },
+    "/generos": {
+      "post": {
+        "operationId": "GeneroController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearGeneroDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Genero"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crear un género (solo ADMIN)",
+        "tags": [
+          "Géneros"
+        ]
+      },
+      "get": {
+        "operationId": "GeneroController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Genero"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar géneros (público)",
+        "tags": [
+          "Géneros"
+        ]
+      }
+    },
+    "/generos/{id}": {
+      "get": {
+        "operationId": "GeneroController_buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Genero"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver un género por id (público)",
+        "tags": [
+          "Géneros"
+        ]
+      },
+      "patch": {
+        "operationId": "GeneroController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarGeneroDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Genero"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar un género (solo ADMIN)",
+        "tags": [
+          "Géneros"
+        ]
+      },
+      "delete": {
+        "operationId": "GeneroController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar un género (solo ADMIN; 409 si algún juego lo usa)",
+        "tags": [
+          "Géneros"
+        ]
+      }
+    },
+    "/plataformas": {
+      "post": {
+        "operationId": "PlataformaController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearPlataformaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crear una plataforma (solo ADMIN)",
+        "tags": [
+          "Plataformas"
+        ]
+      },
+      "get": {
+        "operationId": "PlataformaController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Plataforma"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar plataformas (público)",
+        "tags": [
+          "Plataformas"
+        ]
+      }
+    },
+    "/plataformas/{id}": {
+      "get": {
+        "operationId": "PlataformaController_buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una plataforma por id (público)",
+        "tags": [
+          "Plataformas"
+        ]
+      },
+      "patch": {
+        "operationId": "PlataformaController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarPlataformaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plataforma"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar una plataforma (solo ADMIN)",
+        "tags": [
+          "Plataformas"
+        ]
+      },
+      "delete": {
+        "operationId": "PlataformaController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar una plataforma (solo ADMIN; 409 si algún juego la usa)",
+        "tags": [
+          "Plataformas"
+        ]
+      }
+    },
+    "/caracteristicas": {
+      "post": {
+        "operationId": "CaracteristicaController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearCaracteristicaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Caracteristica"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crear una característica (solo ADMIN)",
+        "tags": [
+          "Características"
+        ]
+      },
+      "get": {
+        "operationId": "CaracteristicaController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Caracteristica"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar características (público)",
+        "tags": [
+          "Características"
+        ]
+      }
+    },
+    "/caracteristicas/{id}": {
+      "get": {
+        "operationId": "CaracteristicaController_buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Caracteristica"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una característica por id (público)",
+        "tags": [
+          "Características"
+        ]
+      },
+      "patch": {
+        "operationId": "CaracteristicaController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarCaracteristicaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Caracteristica"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar una característica (solo ADMIN)",
+        "tags": [
+          "Características"
+        ]
+      },
+      "delete": {
+        "operationId": "CaracteristicaController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar una característica (solo ADMIN; 409 si algún juego la usa)",
+        "tags": [
+          "Características"
+        ]
+      }
+    },
+    "/clasificaciones-edad": {
+      "post": {
+        "operationId": "ClasificacionEdadController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearClasificacionEdadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClasificacionEdad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crear una clasificación de edad (solo ADMIN)",
+        "tags": [
+          "Clasificaciones de edad"
+        ]
+      },
+      "get": {
+        "operationId": "ClasificacionEdadController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClasificacionEdad"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar clasificaciones de edad (público)",
+        "tags": [
+          "Clasificaciones de edad"
+        ]
+      }
+    },
+    "/clasificaciones-edad/{id}": {
+      "get": {
+        "operationId": "ClasificacionEdadController_buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClasificacionEdad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una clasificación de edad por id (público)",
+        "tags": [
+          "Clasificaciones de edad"
+        ]
+      },
+      "patch": {
+        "operationId": "ClasificacionEdadController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarClasificacionEdadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClasificacionEdad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar una clasificación de edad (solo ADMIN)",
+        "tags": [
+          "Clasificaciones de edad"
+        ]
+      },
+      "delete": {
+        "operationId": "ClasificacionEdadController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar una clasificación de edad (solo ADMIN; 409 si algún juego la usa)",
+        "tags": [
+          "Clasificaciones de edad"
+        ]
+      }
+    },
+    "/juegos": {
+      "post": {
+        "operationId": "JuegoController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearJuegoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Juego"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crear un juego con su clasificación, plataformas, géneros y características (solo ADMIN)",
+        "tags": [
+          "Juegos"
+        ]
+      },
+      "get": {
+        "operationId": "JuegoController_listar",
+        "parameters": [
+          {
+            "name": "titulo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Juego"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar juegos, con filtro opcional por título (público)",
+        "tags": [
+          "Juegos"
+        ]
+      }
+    },
+    "/juegos/{id}": {
+      "get": {
+        "operationId": "JuegoController_buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Juego"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver el detalle de un juego (público)",
+        "tags": [
+          "Juegos"
+        ]
+      },
+      "patch": {
+        "operationId": "JuegoController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarJuegoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Juego"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar un juego; las listas de ids enviadas reemplazan a las anteriores (solo ADMIN)",
+        "tags": [
+          "Juegos"
+        ]
+      },
+      "delete": {
+        "operationId": "JuegoController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar un juego (solo ADMIN)",
+        "tags": [
+          "Juegos"
+        ]
+      }
+    },
+    "/usuarios": {
+      "post": {
+        "operationId": "UsuarioController_registrar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearUsuarioDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registrarse: crea un usuario con rol USUARIO (público)",
+        "tags": [
+          "Usuarios"
+        ]
+      },
+      "get": {
+        "operationId": "UsuarioController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Usuario"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar todos los usuarios (solo ADMIN)",
+        "tags": [
+          "Usuarios"
+        ]
+      }
+    },
+    "/usuarios/{id}": {
+      "get": {
+        "operationId": "UsuarioController_buscarPorId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver un usuario (el propio usuario o un ADMIN)",
+        "tags": [
+          "Usuarios"
+        ]
+      },
+      "patch": {
+        "operationId": "UsuarioController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarUsuarioDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar nombre, apellido, email o plataforma favorita (el propio usuario o un ADMIN)",
+        "tags": [
+          "Usuarios"
+        ]
+      },
+      "delete": {
+        "operationId": "UsuarioController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar un usuario y todos sus datos (el propio usuario o un ADMIN)",
+        "tags": [
+          "Usuarios"
+        ]
+      }
+    },
+    "/usuarios/{id}/contrasena": {
+      "patch": {
+        "operationId": "UsuarioController_cambiarContrasena",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarContrasenaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cambiar la contraseña indicando la actual (solo el propio usuario)",
+        "tags": [
+          "Usuarios"
+        ]
+      }
+    },
+    "/usuarios/{id}/rol": {
+      "patch": {
+        "operationId": "UsuarioController_cambiarRol",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarRolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cambiar el rol de un usuario (solo ADMIN; 409 si es el último ADMIN)",
+        "tags": [
+          "Usuarios"
+        ]
+      }
+    },
+    "/colecciones": {
+      "post": {
+        "operationId": "ColeccionController_crear",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearColeccionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coleccion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Crear una colección propia (usuario con sesión)",
+        "tags": [
+          "Colecciones"
+        ]
+      },
+      "get": {
+        "operationId": "ColeccionController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Coleccion"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar mis colecciones (usuario con sesión)",
+        "tags": [
+          "Colecciones"
+        ]
+      }
+    },
+    "/colecciones/{id}": {
+      "get": {
+        "operationId": "ColeccionController_consultar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coleccion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver una colección (el dueño o un ADMIN)",
+        "tags": [
+          "Colecciones"
+        ]
+      },
+      "patch": {
+        "operationId": "ColeccionController_actualizar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarColeccionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coleccion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modificar una colección; juegoIds reemplaza la lista (el dueño o un ADMIN)",
+        "tags": [
+          "Colecciones"
+        ]
+      },
+      "delete": {
+        "operationId": "ColeccionController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Eliminar una colección (el dueño o un ADMIN)",
+        "tags": [
+          "Colecciones"
+        ]
+      }
+    },
+    "/colecciones/{id}/juegos": {
+      "post": {
+        "operationId": "ColeccionController_agregarJuego",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgregarJuegoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coleccion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "CUU Administrar colección: agregar un juego (el dueño o un ADMIN)",
+        "tags": [
+          "Colecciones"
+        ]
+      }
+    },
+    "/colecciones/{id}/juegos/{juegoId}": {
+      "delete": {
+        "operationId": "ColeccionController_quitarJuego",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "juegoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "CUU Administrar colección: quitar un juego (el dueño o un ADMIN)",
+        "tags": [
+          "Colecciones"
+        ]
+      }
+    },
+    "/biblioteca": {
+      "get": {
+        "operationId": "JuegoGuardadoController_listar",
+        "parameters": [
+          {
+            "name": "estado",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ME_INTERESA",
+                "YA_JUGADO"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JuegoGuardado"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver mi biblioteca, con filtro opcional por estado (usuario con sesión)",
+        "tags": [
+          "Biblioteca"
+        ]
+      },
+      "post": {
+        "operationId": "JuegoGuardadoController_guardar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardarJuegoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JuegoGuardado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto: el dato ya existe (duplicado) o está en uso y no se puede borrar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Guardar un juego en mi biblioteca como ME_INTERESA o YA_JUGADO (usuario con sesión)",
+        "tags": [
+          "Biblioteca"
+        ]
+      }
+    },
+    "/biblioteca/{juegoId}": {
+      "patch": {
+        "operationId": "JuegoGuardadoController_cambiarEstado",
+        "parameters": [
+          {
+            "name": "juegoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarEstadoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JuegoGuardado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cambiar el estado de un juego de mi biblioteca (usuario con sesión)",
+        "tags": [
+          "Biblioteca"
+        ]
+      },
+      "delete": {
+        "operationId": "JuegoGuardadoController_quitar",
+        "parameters": [
+          {
+            "name": "juegoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Quitar un juego de mi biblioteca (usuario con sesión)",
+        "tags": [
+          "Biblioteca"
+        ]
+      }
+    },
+    "/recomendaciones": {
+      "post": {
+        "operationId": "RecomendacionController_generar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerarRecomendacionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Busqueda"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "CUU Generar recomendación: de 1 a 3 juegos según los criterios, sin los YA_JUGADO (usuario con sesión)",
+        "tags": [
+          "Recomendaciones"
+        ]
+      },
+      "get": {
+        "operationId": "RecomendacionController_listar",
+        "parameters": [
+          {
+            "name": "desde",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hasta",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Busqueda"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver mi historial de recomendaciones, con filtro opcional por fechas (usuario con sesión)",
+        "tags": [
+          "Recomendaciones"
+        ]
+      }
+    },
+    "/recomendaciones/{id}": {
+      "get": {
+        "operationId": "RecomendacionController_consultar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Busqueda"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ver el detalle de una búsqueda con sus recomendaciones (el dueño o un ADMIN)",
+        "tags": [
+          "Recomendaciones"
+        ]
+      },
+      "delete": {
+        "operationId": "RecomendacionController_eliminar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Borrar una búsqueda del historial (el dueño o un ADMIN)",
+        "tags": [
+          "Recomendaciones"
+        ]
+      }
+    },
+    "/recomendaciones/{busquedaId}/juegos/{juegoId}": {
+      "patch": {
+        "operationId": "RecomendacionController_calificar",
+        "parameters": [
+          {
+            "name": "busquedaId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "juegoId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalificarRecomendacionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recomendacion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe el recurso pedido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Calificar de 1 a 5 un juego recomendado, con comentario opcional (el dueño o un ADMIN)",
+        "tags": [
+          "Recomendaciones"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespuestaLoginDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin sesión: falta el token, es inválido o está vencido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Iniciar sesión: devuelve el token JWT y los datos del usuario (público)",
+        "tags": [
+          "Autenticación"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "DGame (MyGameSearcher) API",
+    "description": "API REST que recomienda de 1 a 3 videojuegos según géneros, características y plataforma.\n\n**Cómo autenticarse:** hacer `POST /auth/login` con email y contraseña, copiar el `token` de la respuesta y pegarlo en el botón **Authorize** (arriba a la derecha). Desde ahí, todas las pruebas se mandan con `Authorization: Bearer <token>`.\n\n**Niveles de acceso:** público (sin token), usuario con sesión iniciada, y ADMIN. El resumen de cada ruta indica quién puede usarla.\n\n**Errores:** todas las respuestas de error tienen la forma `{ \"statusCode\", \"message\", \"error\" }`, con el mensaje en español. 400: datos inválidos · 401: sin sesión o token inválido · 403: sin permiso · 404: no existe · 409: conflicto (duplicado o en uso).",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Token que devuelve POST /auth/login"
+      }
+    },
+    "schemas": {
+      "CrearGeneroDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "Genero": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ]
+      },
+      "ErrorRespuestaDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 404
+          },
+          "message": {
+            "description": "Mensaje en español. En los errores de validación (400) es una lista con un mensaje por campo",
+            "oneOf": [
+              {
+                "type": "string",
+                "example": "No se encontró el género con id 9999"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "El nombre es obligatorio"
+                ]
+              }
+            ]
+          },
+          "error": {
+            "type": "string",
+            "example": "Not Found"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
+      "ActualizarGeneroDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        }
+      },
+      "CrearPlataformaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "Plataforma": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ]
+      },
+      "ActualizarPlataformaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        }
+      },
+      "CrearCaracteristicaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "Caracteristica": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ]
+      },
+      "ActualizarCaracteristicaDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        }
+      },
+      "CrearClasificacionEdadDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "ClasificacionEdad": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nombre"
+        ]
+      },
+      "ActualizarClasificacionEdadDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          }
+        }
+      },
+      "CrearJuegoDto": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "anioLanzamiento": {
+            "type": "number",
+            "minimum": 1950,
+            "maximum": 2026
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "imagenUrl": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500,
+            "format": "uri"
+          },
+          "clasificacionEdadId": {
+            "type": "number"
+          },
+          "plataformaIds": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "generoIds": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "caracteristicaIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "titulo",
+          "anioLanzamiento",
+          "descripcion",
+          "clasificacionEdadId",
+          "plataformaIds",
+          "generoIds"
+        ]
+      },
+      "Juego": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "anioLanzamiento": {
+            "type": "number"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "imagenUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "clasificacionEdad": {
+            "$ref": "#/components/schemas/ClasificacionEdad"
+          },
+          "plataformas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Plataforma"
+            }
+          },
+          "generos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Genero"
+            }
+          },
+          "caracteristicas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Caracteristica"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "anioLanzamiento",
+          "descripcion",
+          "imagenUrl",
+          "clasificacionEdad",
+          "plataformas",
+          "generos",
+          "caracteristicas"
+        ]
+      },
+      "ActualizarJuegoDto": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "anioLanzamiento": {
+            "type": "number",
+            "minimum": 1950,
+            "maximum": 2026
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "imagenUrl": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500,
+            "format": "uri"
+          },
+          "clasificacionEdadId": {
+            "type": "number"
+          },
+          "plataformaIds": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "generoIds": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "caracteristicaIds": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "CrearUsuarioDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "apellido": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 100,
+            "format": "email"
+          },
+          "contrasena": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          },
+          "plataformaId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "nombre",
+          "apellido",
+          "email",
+          "contrasena"
+        ]
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "apellido": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "rol": {
+            "enum": [
+              "USUARIO",
+              "ADMIN"
+            ],
+            "type": "string"
+          },
+          "fechaRegistro": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "plataforma": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Plataforma"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "apellido",
+          "email",
+          "rol",
+          "fechaRegistro",
+          "plataforma"
+        ]
+      },
+      "ActualizarUsuarioDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "apellido": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 100,
+            "format": "email"
+          },
+          "plataformaId": {
+            "type": "number"
+          }
+        }
+      },
+      "CambiarContrasenaDto": {
+        "type": "object",
+        "properties": {
+          "contrasenaActual": {
+            "type": "string"
+          },
+          "contrasenaNueva": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "contrasenaActual",
+          "contrasenaNueva"
+        ]
+      },
+      "CambiarRolDto": {
+        "type": "object",
+        "properties": {
+          "rol": {
+            "type": "string",
+            "enum": [
+              "USUARIO",
+              "ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "rol"
+        ]
+      },
+      "CrearColeccionDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "juegoIds": {
+            "nullable": true,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "nombre"
+        ]
+      },
+      "Coleccion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaCreacion": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/Usuario"
+          },
+          "juegos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Juego"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "descripcion",
+          "fechaCreacion",
+          "usuario",
+          "juegos"
+        ]
+      },
+      "ActualizarColeccionDto": {
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "juegoIds": {
+            "nullable": true,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "AgregarJuegoDto": {
+        "type": "object",
+        "properties": {
+          "juegoId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "juegoId"
+        ]
+      },
+      "JuegoGuardado": {
+        "type": "object",
+        "properties": {
+          "usuarioId": {
+            "type": "number"
+          },
+          "juegoId": {
+            "type": "number"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/Usuario"
+          },
+          "juego": {
+            "$ref": "#/components/schemas/Juego"
+          },
+          "estado": {
+            "enum": [
+              "ME_INTERESA",
+              "YA_JUGADO"
+            ],
+            "type": "string"
+          },
+          "fecha": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "usuarioId",
+          "juegoId",
+          "usuario",
+          "juego",
+          "estado",
+          "fecha"
+        ]
+      },
+      "GuardarJuegoDto": {
+        "type": "object",
+        "properties": {
+          "juegoId": {
+            "type": "number"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ME_INTERESA",
+              "YA_JUGADO"
+            ]
+          }
+        },
+        "required": [
+          "juegoId",
+          "estado"
+        ]
+      },
+      "CambiarEstadoDto": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ME_INTERESA",
+              "YA_JUGADO"
+            ]
+          }
+        },
+        "required": [
+          "estado"
+        ]
+      },
+      "GenerarRecomendacionDto": {
+        "type": "object",
+        "properties": {
+          "plataformaIds": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "generoIds": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "caracteristicaIds": {
+            "nullable": true,
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "plataformaIds",
+          "generoIds"
+        ]
+      },
+      "Busqueda": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/Usuario"
+          },
+          "fechaBusqueda": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "plataformas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Plataforma"
+            }
+          },
+          "generos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Genero"
+            }
+          },
+          "caracteristicas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Caracteristica"
+            }
+          },
+          "recomendaciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recomendacion"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "usuario",
+          "fechaBusqueda",
+          "plataformas",
+          "generos",
+          "caracteristicas",
+          "recomendaciones"
+        ]
+      },
+      "Recomendacion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "busqueda": {
+            "$ref": "#/components/schemas/Busqueda"
+          },
+          "juego": {
+            "$ref": "#/components/schemas/Juego"
+          },
+          "orden": {
+            "type": "number"
+          },
+          "calificacion": {
+            "type": "number",
+            "nullable": true
+          },
+          "comentario": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaCalificacion": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "busqueda",
+          "juego",
+          "orden",
+          "calificacion",
+          "comentario",
+          "fechaCalificacion"
+        ]
+      },
+      "CalificarRecomendacionDto": {
+        "type": "object",
+        "properties": {
+          "calificacion": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comentario": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "calificacion"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "contrasena": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "contrasena"
+        ]
+      },
+      "UsuarioLogin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "apellido": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "USUARIO",
+              "ADMIN"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "apellido",
+          "email",
+          "rol"
+        ]
+      },
+      "RespuestaLoginDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token JWT: mandarlo en el header Authorization: Bearer <token>"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioLogin"
+          }
+        },
+        "required": [
+          "token",
+          "usuario"
+        ]
+      }
+    }
+  }
+}

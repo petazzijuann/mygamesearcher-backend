@@ -1,25 +1,28 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { configurarApp } from './comun/configurar-app';
+import {
+  configurarSwagger,
+  RUTA_DOCUMENTACION,
+} from './comun/configurar-swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // whitelist: descarta campos no declarados en el DTO
-  // transform: convierte el body y los params a los tipos del DTO
-  // stopAtFirstError: muestra un solo error por campo
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      stopAtFirstError: true,
-    }),
-  );
+  // ValidationPipe y filtro de errores globales (ver comun/configurar-app.ts)
+  configurarApp(app);
+  // Documentación interactiva de la API (ver comun/configurar-swagger.ts)
+  configurarSwagger(app);
 
   const config = app.get(ConfigService);
   const puerto = config.get<string>('PORT') ?? 3000;
   await app.listen(puerto);
   Logger.log(`API escuchando en http://localhost:${puerto}`, 'Bootstrap');
+  Logger.log(
+    `Documentación en http://localhost:${puerto}/${RUTA_DOCUMENTACION}`,
+    'Bootstrap',
+  );
 }
 void bootstrap();

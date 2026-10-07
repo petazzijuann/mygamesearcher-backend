@@ -4,6 +4,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeneroModule } from './genero/genero.module';
+import { PlataformaModule } from './plataforma/plataforma.module';
+import { CaracteristicaModule } from './caracteristica/caracteristica.module';
+import { ClasificacionEdadModule } from './clasificacion-edad/clasificacion-edad.module';
+import { JuegoModule } from './juego/juego.module';
+import { UsuarioModule } from './usuario/usuario.module';
+import { ColeccionModule } from './coleccion/coleccion.module';
+import { JuegoGuardadoModule } from './juego-guardado/juego-guardado.module';
+import { RecomendacionModule } from './recomendacion/recomendacion.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -30,6 +39,15 @@ import { GeneroModule } from './genero/genero.module';
       }),
     }),
     GeneroModule,
+    PlataformaModule,
+    CaracteristicaModule,
+    ClasificacionEdadModule,
+    JuegoModule,
+    UsuarioModule,
+    ColeccionModule,
+    JuegoGuardadoModule,
+    RecomendacionModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
