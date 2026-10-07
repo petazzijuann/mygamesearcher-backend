@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
 import type { UsuarioToken } from '../auth/usuario-token.interface';
@@ -31,6 +32,7 @@ export class JuegoGuardadoController {
       'Ver mi biblioteca, con filtro opcional por estado (usuario con sesión)',
   })
   @Get()
+  @ApiErrores(400, 401)
   listar(
     @Query() filtro: FiltroBibliotecaDto,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -43,6 +45,7 @@ export class JuegoGuardadoController {
       'Guardar un juego en mi biblioteca como ME_INTERESA o YA_JUGADO (usuario con sesión)',
   })
   @Post()
+  @ApiErrores(400, 401, 409)
   guardar(
     @Body() dto: GuardarJuegoDto,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -55,6 +58,7 @@ export class JuegoGuardadoController {
       'Cambiar el estado de un juego de mi biblioteca (usuario con sesión)',
   })
   @Patch(':juegoId')
+  @ApiErrores(400, 401, 404)
   cambiarEstado(
     @Param('juegoId', idPipe) juegoId: number,
     @Body() dto: CambiarEstadoDto,
@@ -72,6 +76,7 @@ export class JuegoGuardadoController {
   })
   @Delete(':juegoId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 404)
   quitar(
     @Param('juegoId', idPipe) juegoId: number,
     @UsuarioActual() usuarioActual: UsuarioToken,

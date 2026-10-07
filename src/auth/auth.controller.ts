@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Publico } from './decoradores/publico.decorator';
@@ -17,6 +18,7 @@ export class AuthController {
   @Publico()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiErrores(400, 401)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }

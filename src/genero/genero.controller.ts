@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Publico } from '../auth/decoradores/publico.decorator';
 import { Roles } from '../auth/decoradores/roles.decorator';
@@ -27,6 +28,7 @@ export class GeneroController {
   @ApiOperation({ summary: 'Crear un género (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Post()
+  @ApiErrores(400, 401, 403, 409)
   crear(@Body() dto: CrearGeneroDto) {
     return this.generoService.crear(dto);
   }
@@ -41,6 +43,7 @@ export class GeneroController {
   @ApiOperation({ summary: 'Ver un género por id (público)' })
   @Publico()
   @Get(':id')
+  @ApiErrores(400, 404)
   buscarPorId(@Param('id', idPipe) id: number) {
     return this.generoService.buscarPorId(id);
   }
@@ -48,6 +51,7 @@ export class GeneroController {
   @ApiOperation({ summary: 'Modificar un género (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Patch(':id')
+  @ApiErrores(400, 401, 403, 404, 409)
   actualizar(
     @Param('id', idPipe) id: number,
     @Body() dto: ActualizarGeneroDto,
@@ -61,6 +65,7 @@ export class GeneroController {
   @Roles(Rol.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404, 409)
   eliminar(@Param('id', idPipe) id: number) {
     return this.generoService.eliminar(id);
   }

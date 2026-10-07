@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Publico } from '../auth/decoradores/publico.decorator';
 import { Roles } from '../auth/decoradores/roles.decorator';
@@ -32,6 +33,7 @@ export class JuegoController {
   })
   @Roles(Rol.ADMIN)
   @Post()
+  @ApiErrores(400, 401, 403, 409)
   crear(@Body() dto: CrearJuegoDto) {
     return this.juegoService.crear(dto);
   }
@@ -41,6 +43,7 @@ export class JuegoController {
   })
   @Publico()
   @Get()
+  @ApiErrores(400)
   listar(@Query() filtro: FiltroJuegosDto) {
     return this.juegoService.listar(filtro.titulo);
   }
@@ -48,6 +51,7 @@ export class JuegoController {
   @ApiOperation({ summary: 'Ver el detalle de un juego (público)' })
   @Publico()
   @Get(':id')
+  @ApiErrores(400, 404)
   buscarPorId(@Param('id', idPipe) id: number) {
     return this.juegoService.buscarPorId(id);
   }
@@ -58,6 +62,7 @@ export class JuegoController {
   })
   @Roles(Rol.ADMIN)
   @Patch(':id')
+  @ApiErrores(400, 401, 403, 404, 409)
   actualizar(@Param('id', idPipe) id: number, @Body() dto: ActualizarJuegoDto) {
     return this.juegoService.actualizar(id, dto);
   }
@@ -66,6 +71,7 @@ export class JuegoController {
   @Roles(Rol.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404)
   eliminar(@Param('id', idPipe) id: number) {
     return this.juegoService.eliminar(id);
   }

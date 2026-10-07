@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
 import type { UsuarioToken } from '../auth/usuario-token.interface';
@@ -27,6 +28,7 @@ export class ColeccionController {
 
   @ApiOperation({ summary: 'Crear una colección propia (usuario con sesión)' })
   @Post()
+  @ApiErrores(400, 401, 409)
   crear(
     @Body() dto: CrearColeccionDto,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -36,12 +38,14 @@ export class ColeccionController {
 
   @ApiOperation({ summary: 'Listar mis colecciones (usuario con sesión)' })
   @Get()
+  @ApiErrores(401)
   listar(@UsuarioActual() usuarioActual: UsuarioToken) {
     return this.coleccionService.listar(usuarioActual);
   }
 
   @ApiOperation({ summary: 'Ver una colección (el dueño o un ADMIN)' })
   @Get(':id')
+  @ApiErrores(400, 401, 403, 404)
   consultar(
     @Param('id', idPipe) id: number,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -54,6 +58,7 @@ export class ColeccionController {
       'Modificar una colección; juegoIds reemplaza la lista (el dueño o un ADMIN)',
   })
   @Patch(':id')
+  @ApiErrores(400, 401, 403, 404, 409)
   actualizar(
     @Param('id', idPipe) id: number,
     @Body() dto: ActualizarColeccionDto,
@@ -65,6 +70,7 @@ export class ColeccionController {
   @ApiOperation({ summary: 'Eliminar una colección (el dueño o un ADMIN)' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404)
   eliminar(
     @Param('id', idPipe) id: number,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -78,6 +84,7 @@ export class ColeccionController {
       'CUU Administrar colección: agregar un juego (el dueño o un ADMIN)',
   })
   @Post(':id/juegos')
+  @ApiErrores(400, 401, 403, 404, 409)
   agregarJuego(
     @Param('id', idPipe) id: number,
     @Body() dto: AgregarJuegoDto,
@@ -91,6 +98,7 @@ export class ColeccionController {
   })
   @Delete(':id/juegos/:juegoId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404)
   quitarJuego(
     @Param('id', idPipe) id: number,
     @Param('juegoId', idPipe) juegoId: number,

@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Publico } from '../auth/decoradores/publico.decorator';
 import { Roles } from '../auth/decoradores/roles.decorator';
@@ -34,6 +35,7 @@ export class UsuarioController {
   })
   @Publico()
   @Post()
+  @ApiErrores(400, 409)
   registrar(@Body() dto: CrearUsuarioDto) {
     return this.usuarioService.registrar(dto);
   }
@@ -41,6 +43,7 @@ export class UsuarioController {
   @ApiOperation({ summary: 'Listar todos los usuarios (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Get()
+  @ApiErrores(401, 403)
   listar() {
     return this.usuarioService.listar();
   }
@@ -48,6 +51,7 @@ export class UsuarioController {
   // El propio usuario o un ADMIN (lo controla el service)
   @ApiOperation({ summary: 'Ver un usuario (el propio usuario o un ADMIN)' })
   @Get(':id')
+  @ApiErrores(400, 401, 403, 404)
   buscarPorId(
     @Param('id', idPipe) id: number,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -60,6 +64,7 @@ export class UsuarioController {
       'Modificar nombre, apellido, email o plataforma favorita (el propio usuario o un ADMIN)',
   })
   @Patch(':id')
+  @ApiErrores(400, 401, 403, 404, 409)
   actualizar(
     @Param('id', idPipe) id: number,
     @Body() dto: ActualizarUsuarioDto,
@@ -75,6 +80,7 @@ export class UsuarioController {
   })
   @Patch(':id/contrasena')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404)
   cambiarContrasena(
     @Param('id', idPipe) id: number,
     @Body() dto: CambiarContrasenaDto,
@@ -89,6 +95,7 @@ export class UsuarioController {
   })
   @Roles(Rol.ADMIN)
   @Patch(':id/rol')
+  @ApiErrores(400, 401, 403, 404, 409)
   cambiarRol(@Param('id', idPipe) id: number, @Body() dto: CambiarRolDto) {
     return this.usuarioService.cambiarRol(id, dto.rol);
   }
@@ -99,6 +106,7 @@ export class UsuarioController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404, 409)
   eliminar(
     @Param('id', idPipe) id: number,
     @UsuarioActual() usuarioActual: UsuarioToken,

@@ -901,3 +901,42 @@
 | `POST /auth/login` desde "Try it out" con el admin, copiar el `token` y pegarlo en **Authorize** | Las rutas protegidas (por ejemplo `POST /generos`) se pueden probar desde la página |
 | Probar `POST /generos` sin cargar el token | `401` `"Debe iniciar sesión"` |
 | `npm run test` y `npm run test:e2e` | Siguen pasando (13 y 6 tests) |
+
+## Paso 19 - Documentación con Swagger: errores, ruta /api y exportación a openapi.json (2026-10-07)
+
+**Qué se hizo:** Se completó la documentación del Paso 18: la página de Swagger pasó de `/docs` a `/api`, se documentaron las respuestas de error de cada ruta (400, 401, 403, 404 y 409) con su esquema, y se agregó la exportación del documento a `docs/openapi.json` con un script para regenerarlo sin levantar la API ni conectarse a la base.
+
+**Cómo se hizo:**
+- Rama `feature/swagger` creada desde `dev`.
+- `src/comun/configurar-swagger.ts`: `RUTA_DOCUMENTACION` pasó a `'api'` (página en `/api` y JSON en `/api-json`). Se separó `crearDocumento(app)`, que arma el documento, de `configurarSwagger(app)`, que lo publica; así la API y el script de exportación generan exactamente lo mismo.
+- `src/comun/documentacion.ts` (nuevo):
+  - `ErrorRespuestaDto`: esquema de las respuestas de error (`statusCode`, `message`, `error`), con ejemplos. `message` es un texto o, en los errores de validación, una lista de mensajes.
+  - `@ApiErrores(...códigos)`: decorador que agrega a una ruta cada código de error con una descripción en español y el esquema `ErrorRespuestaDto`.
+- Controllers: `@ApiErrores(...)` en las 45 rutas que pueden fallar, con los códigos que cada una devuelve de verdad (por ejemplo `DELETE /generos/:id` → 400, 401, 403, 404, 409; `GET /juegos/:id` → 400, 404; `POST /auth/login` → 400, 401). Las 5 rutas restantes (`GET /` y los listados de catálogos) no tienen errores posibles.
+- `src/generar-openapi.ts` (nuevo): crea la aplicación en modo `preview`, arma el documento con `crearDocumento` y lo guarda en `docs/openapi.json`.
+- `package.json`: script `docs:openapi` (`nest build && node dist/generar-openapi.js`).
+- `docs/openapi.json` (nuevo, generado): el documento OpenAPI completo.
+- `docs/README.md`: la documentación ahora está en `/api`, el archivo exportado y cómo regenerarlo.
+
+**Por qué:**
+- Las respuestas exitosas (200, 201 y 204, con el esquema de lo que devuelve cada ruta) ya las generaba el plugin de Swagger a partir del código (Paso 18). Los errores no se pueden deducir del código porque los lanzan los services, por eso se documentan a mano por ruta.
+- Un decorador propio (`@ApiErrores`) en lugar de repetir varios `@ApiResponse` por ruta: cada ruta queda en una línea y todas usan la misma descripción y el mismo esquema para cada código. Además de los pedidos (400, 404, 409) se documentaron 401 y 403 en las rutas protegidas, porque también son respuestas reales.
+- Exportación en modo `preview`: NestJS registra los módulos y las rutas pero no crea los providers, así que no se conecta a Supabase ni crea el administrador. El script funciona sin `.env` (se probó renombrándolo). Se compila antes con `nest build` porque el plugin de Swagger actúa al compilar; sin él los DTOs quedarían sin esquema.
+- `docs/openapi.json` se guarda en el repositorio para que la documentación se pueda revisar sin levantar la API (por ejemplo, pegándola en editor.swagger.io o importándola en Postman). Hay que regenerarlo con `npm run docs:openapi` cuando cambien las rutas o los DTOs.
+- Se verificó que el JSON que sirve la API en `/api-json` es idéntico al archivo exportado.
+
+**Requisito del TP que cubre:** Documentación de la API (aprobación).
+
+**Cómo probarlo:**
+
+| Acción | Resultado esperado |
+|---|---|
+| `npm run docs:openapi` (sin la API levantada) | `Documentación exportada en docs/openapi.json (50 rutas)` |
+| Abrir `docs/openapi.json` en https://editor.swagger.io | Las 50 rutas agrupadas, con sus esquemas y respuestas |
+| `npm run start:dev` | La consola muestra `Documentación en http://localhost:3000/api` |
+| Abrir `http://localhost:3000/api` | Página de Swagger; `http://localhost:3000/docs` ya no existe (`404`) |
+| Ver `POST /generos` en la página | Respuestas `201` (esquema `Genero`), `400`, `401`, `403` y `409` (esquema `ErrorRespuestaDto`) |
+| Ver `DELETE /generos/{id}` | Respuestas `204`, `400`, `401`, `403`, `404` y `409` |
+| Ver `GET /juegos/{id}` | Respuestas `200` (esquema `Juego`), `400` y `404` |
+| Ver el esquema `ErrorRespuestaDto` | `statusCode`, `message` (texto o lista) y `error`, con ejemplos |
+| `npm run test` y `npm run test:e2e` | Siguen pasando (13 y 6 tests) |

@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Publico } from '../auth/decoradores/publico.decorator';
 import { Roles } from '../auth/decoradores/roles.decorator';
@@ -29,6 +30,7 @@ export class ClasificacionEdadController {
   @ApiOperation({ summary: 'Crear una clasificación de edad (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Post()
+  @ApiErrores(400, 401, 403, 409)
   crear(@Body() dto: CrearClasificacionEdadDto) {
     return this.clasificacionEdadService.crear(dto);
   }
@@ -43,6 +45,7 @@ export class ClasificacionEdadController {
   @ApiOperation({ summary: 'Ver una clasificación de edad por id (público)' })
   @Publico()
   @Get(':id')
+  @ApiErrores(400, 404)
   buscarPorId(@Param('id', idPipe) id: number) {
     return this.clasificacionEdadService.buscarPorId(id);
   }
@@ -50,6 +53,7 @@ export class ClasificacionEdadController {
   @ApiOperation({ summary: 'Modificar una clasificación de edad (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Patch(':id')
+  @ApiErrores(400, 401, 403, 404, 409)
   actualizar(
     @Param('id', idPipe) id: number,
     @Body() dto: ActualizarClasificacionEdadDto,
@@ -64,6 +68,7 @@ export class ClasificacionEdadController {
   @Roles(Rol.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404, 409)
   eliminar(@Param('id', idPipe) id: number) {
     return this.clasificacionEdadService.eliminar(id);
   }

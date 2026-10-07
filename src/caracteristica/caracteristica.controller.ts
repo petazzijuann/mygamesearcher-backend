@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Publico } from '../auth/decoradores/publico.decorator';
 import { Roles } from '../auth/decoradores/roles.decorator';
@@ -27,6 +28,7 @@ export class CaracteristicaController {
   @ApiOperation({ summary: 'Crear una característica (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Post()
+  @ApiErrores(400, 401, 403, 409)
   crear(@Body() dto: CrearCaracteristicaDto) {
     return this.caracteristicaService.crear(dto);
   }
@@ -41,6 +43,7 @@ export class CaracteristicaController {
   @ApiOperation({ summary: 'Ver una característica por id (público)' })
   @Publico()
   @Get(':id')
+  @ApiErrores(400, 404)
   buscarPorId(@Param('id', idPipe) id: number) {
     return this.caracteristicaService.buscarPorId(id);
   }
@@ -48,6 +51,7 @@ export class CaracteristicaController {
   @ApiOperation({ summary: 'Modificar una característica (solo ADMIN)' })
   @Roles(Rol.ADMIN)
   @Patch(':id')
+  @ApiErrores(400, 401, 403, 404, 409)
   actualizar(
     @Param('id', idPipe) id: number,
     @Body() dto: ActualizarCaracteristicaDto,
@@ -62,6 +66,7 @@ export class CaracteristicaController {
   @Roles(Rol.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404, 409)
   eliminar(@Param('id', idPipe) id: number) {
     return this.caracteristicaService.eliminar(id);
   }

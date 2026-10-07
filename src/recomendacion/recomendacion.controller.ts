@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiErrores } from '../comun/documentacion';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UsuarioActual } from '../auth/decoradores/usuario-actual.decorator';
 import type { UsuarioToken } from '../auth/usuario-token.interface';
@@ -32,6 +33,7 @@ export class RecomendacionController {
       'CUU Generar recomendación: de 1 a 3 juegos según los criterios, sin los YA_JUGADO (usuario con sesión)',
   })
   @Post()
+  @ApiErrores(400, 401, 404)
   generar(
     @Body() dto: GenerarRecomendacionDto,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -45,6 +47,7 @@ export class RecomendacionController {
       'Ver mi historial de recomendaciones, con filtro opcional por fechas (usuario con sesión)',
   })
   @Get()
+  @ApiErrores(400, 401)
   listar(
     @Query() filtro: FiltroHistorialDto,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -58,6 +61,7 @@ export class RecomendacionController {
       'Ver el detalle de una búsqueda con sus recomendaciones (el dueño o un ADMIN)',
   })
   @Get(':id')
+  @ApiErrores(400, 401, 403, 404)
   consultar(
     @Param('id', idPipe) id: number,
     @UsuarioActual() usuarioActual: UsuarioToken,
@@ -71,6 +75,7 @@ export class RecomendacionController {
       'Calificar de 1 a 5 un juego recomendado, con comentario opcional (el dueño o un ADMIN)',
   })
   @Patch(':busquedaId/juegos/:juegoId')
+  @ApiErrores(400, 401, 403, 404)
   calificar(
     @Param('busquedaId', idPipe) busquedaId: number,
     @Param('juegoId', idPipe) juegoId: number,
@@ -91,6 +96,7 @@ export class RecomendacionController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiErrores(400, 401, 403, 404)
   eliminar(
     @Param('id', idPipe) id: number,
     @UsuarioActual() usuarioActual: UsuarioToken,

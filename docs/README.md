@@ -14,10 +14,18 @@ En el `.env` hay que completar los datos de la base (`DB_*`), `JWT_SECRET` (una 
 
 Con la API levantada, la documentación interactiva (Swagger) está en:
 
-- **http://localhost:3000/docs**: todas las rutas agrupadas, con sus datos de entrada, respuestas y quién puede usarlas. Se pueden probar desde ahí ("Try it out").
-- **http://localhost:3000/docs-json**: el mismo contenido en formato OpenAPI (JSON), para importarlo en Postman u otras herramientas.
+- **http://localhost:3000/api**: todas las rutas agrupadas, con sus datos de entrada, respuestas exitosas, errores posibles y quién puede usarlas. Se pueden probar desde ahí ("Try it out").
+- **http://localhost:3000/api-json**: el mismo contenido en formato OpenAPI (JSON), para importarlo en Postman u otras herramientas.
 
 Para probar las rutas que piden sesión: hacer `POST /auth/login`, copiar el `token` de la respuesta y pegarlo en el botón **Authorize**.
+
+Sin levantar la API, la misma documentación está exportada en [openapi.json](./openapi.json). Se puede ver pegándola en https://editor.swagger.io. Para regenerarla después de cambiar rutas o DTOs:
+
+```
+npm run docs:openapi
+```
+
+No necesita `.env` ni conexión a la base.
 
 ## Tests
 

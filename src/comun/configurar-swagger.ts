@@ -1,14 +1,15 @@
 import { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 
-// Ruta de la documentación interactiva: http://localhost:3000/docs
-// (el JSON de OpenAPI queda en /docs-json)
-export const RUTA_DOCUMENTACION = 'docs';
+// Ruta de la documentación interactiva: http://localhost:3000/api
+// (el JSON de OpenAPI queda en /api-json)
+export const RUTA_DOCUMENTACION = 'api';
 
-// Arma la documentación de la API con Swagger (OpenAPI).
+// Arma el documento OpenAPI de la API. Lo usan la API (configurarSwagger)
+// y el script que exporta docs/openapi.json (generar-openapi.ts).
 // Los esquemas de los DTOs los genera el plugin de @nestjs/swagger (nest-cli.json)
 // a partir de los tipos y de las validaciones de class-validator
-export function configurarSwagger(app: INestApplication): void {
+export function crearDocumento(app: INestApplication): OpenAPIObject {
   const configuracion = new DocumentBuilder()
     .setTitle('DGame (MyGameSearcher) API')
     .setDescription(
@@ -31,8 +32,12 @@ export function configurarSwagger(app: INestApplication): void {
     })
     .build();
 
-  const documento = SwaggerModule.createDocument(app, configuracion);
-  SwaggerModule.setup(RUTA_DOCUMENTACION, app, documento, {
+  return SwaggerModule.createDocument(app, configuracion);
+}
+
+// Publica la documentación interactiva (Swagger UI) en /api
+export function configurarSwagger(app: INestApplication): void {
+  SwaggerModule.setup(RUTA_DOCUMENTACION, app, crearDocumento(app), {
     customSiteTitle: 'DGame API - Documentación',
     // Mantiene el token cargado aunque se recargue la página
     swaggerOptions: { persistAuthorization: true },
