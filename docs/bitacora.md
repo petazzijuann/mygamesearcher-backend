@@ -575,3 +575,39 @@
 | `GET /recomendaciones/9999` | `404` `"No se encontró la búsqueda con id 9999"` |
 | `GET /recomendaciones/{b6}` | `200` con `"recomendaciones": []` |
 | `GET /biblioteca` (sin `usuarioId`) | `400` `["El usuario es obligatorio"]` (la biblioteca sigue funcionando con el DTO movido a `src/comun/`) |
+
+## Paso 12 - CUU Administrar colección (2026-10-06)
+
+**Qué se hizo:** Caso de uso para administrar los juegos de una colección de a uno: agregar un juego (`POST /colecciones/:id/juegos`) y quitarlo (`DELETE /colecciones/:id/juegos/:juegoId`). Completa el CRUD del Paso 7, donde los juegos solo se podían cambiar reemplazando la lista entera.
+
+**Cómo se hizo:**
+- Rama `feature/administrar-coleccion` creada desde `dev`.
+- `src/coleccion/dto/agregar-juego.dto.ts` (nuevo): `juegoId` obligatorio y entero.
+- `src/coleccion/coleccion.service.ts`: métodos `agregarJuego` y `quitarJuego`.
+- `src/coleccion/coleccion.controller.ts`: rutas `POST /colecciones/:id/juegos` y `DELETE /colecciones/:id/juegos/:juegoId`.
+
+**Por qué:**
+- Rutas como subrecurso de la colección (`/colecciones/:id/juegos`): expresan "los juegos de esta colección" y corresponden a las acciones de la pantalla ("agregar a la colección", "quitar de la colección"), sin que el frontend tenga que mandar la lista completa. El `PATCH` con `juegoIds` se mantiene para reemplazar la lista entera.
+- Códigos de error: si la colección no existe, `404`. Al agregar, el juego viene en el body: si no existe es `400`, y si ya está en la colección `409`. Al quitar, el juego viene en la URL: si no está en la colección, `404`.
+- `createQueryBuilder().relation(Coleccion, 'juegos').of(id).add()` / `.remove()` de TypeORM: insertan o borran solo la fila de `coleccion_juego`, sin cargar y volver a guardar toda la colección. Para saber si el juego ya está se usa `buscarPorId`, que ya trae la colección con sus juegos.
+- Si llegan dos pedidos iguales al mismo tiempo, la clave primaria de `coleccion_juego` frena el segundo y el filtro global lo convierte en `409`.
+- Igual que en el resto del CRUD de colecciones, no se pide `usuarioId`: el control de que la colección sea del usuario que la modifica se agrega con el login.
+
+**Requisito del TP que cubre:** CUU Administrar colección (aprobación).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), tres juegos (1, 2 y 3) y una colección 1 que tiene el juego 1:
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /colecciones/1/juegos` `{"juegoId": 2}` | `201` con la colección y los juegos 1 y 2 |
+| Repetir el mismo `POST` | `409` `"El juego ya está en la colección"` |
+| `POST /colecciones/1/juegos` `{"juegoId": 9999}` | `400` `"No existe el juego con id 9999"` |
+| `POST /colecciones/1/juegos` `{}` | `400` `["El juego es obligatorio"]` |
+| `POST /colecciones/1/juegos` `{"juegoId": "abc"}` | `400` `["El juego debe ser un id entero"]` |
+| `POST /colecciones/9999/juegos` `{"juegoId": 2}` | `404` `"No se encontró la colección con id 9999"` |
+| `DELETE /colecciones/1/juegos/1` | `204` sin contenido; la colección queda solo con el juego 2 |
+| Repetir el mismo `DELETE` | `404` `"El juego no está en la colección"` |
+| `DELETE /colecciones/1/juegos/3` (nunca estuvo) | `404` `"El juego no está en la colección"` |
+| `DELETE /colecciones/9999/juegos/1` | `404` `"No se encontró la colección con id 9999"` |
+| `DELETE /colecciones/abc/juegos/1` o `/colecciones/1/juegos/abc` | `400` `"El id debe ser un número entero"` |
+| `PATCH /colecciones/1` `{"juegoIds": [1, 3]}` | `200`, la lista entera se reemplaza por los juegos 1 y 3 |

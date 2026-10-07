@@ -13,6 +13,7 @@ import {
 import { idPipe } from '../comun/id.pipe';
 import { ColeccionService } from './coleccion.service';
 import { ActualizarColeccionDto } from './dto/actualizar-coleccion.dto';
+import { AgregarJuegoDto } from './dto/agregar-juego.dto';
 import { CrearColeccionDto } from './dto/crear-coleccion.dto';
 import { FiltroColeccionesDto } from './dto/filtro-colecciones.dto';
 
@@ -47,5 +48,20 @@ export class ColeccionController {
   @HttpCode(HttpStatus.NO_CONTENT)
   eliminar(@Param('id', idPipe) id: number) {
     return this.coleccionService.eliminar(id);
+  }
+
+  // CUU Administrar colección: agregar y quitar juegos de a uno
+  @Post(':id/juegos')
+  agregarJuego(@Param('id', idPipe) id: number, @Body() dto: AgregarJuegoDto) {
+    return this.coleccionService.agregarJuego(id, dto.juegoId);
+  }
+
+  @Delete(':id/juegos/:juegoId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  quitarJuego(
+    @Param('id', idPipe) id: number,
+    @Param('juegoId', idPipe) juegoId: number,
+  ) {
+    return this.coleccionService.quitarJuego(id, juegoId);
   }
 }

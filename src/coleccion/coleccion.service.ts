@@ -95,6 +95,39 @@ export class ColeccionService {
     await this.coleccionRepository.remove(coleccion);
   }
 
+  // CUU Administrar colección: agregar un juego
+  async agregarJuego(id: number, juegoId: number): Promise<Coleccion> {
+    const coleccion = await this.buscarPorId(id);
+    // El juego viene en el body: si no existe, el pedido es incorrecto (400)
+    if (!(await this.juegoRepository.existsBy({ id: juegoId }))) {
+      throw new BadRequestException(`No existe el juego con id ${juegoId}`);
+    }
+    if (coleccion.juegos.some((juego) => juego.id === juegoId)) {
+      throw new ConflictException('El juego ya está en la colección');
+    }
+    // Inserta solo la fila de coleccion_juego, sin volver a guardar toda la colección
+    await this.coleccionRepository
+      .createQueryBuilder()
+      .relation(Coleccion, 'juegos')
+      .of(id)
+      .add(juegoId);
+    return this.buscarPorId(id);
+  }
+
+  // CUU Administrar colección: quitar un juego
+  async quitarJuego(id: number, juegoId: number): Promise<void> {
+    const coleccion = await this.buscarPorId(id);
+    if (!coleccion.juegos.some((juego) => juego.id === juegoId)) {
+      throw new NotFoundException('El juego no está en la colección');
+    }
+    // Borra solo la fila de coleccion_juego
+    await this.coleccionRepository
+      .createQueryBuilder()
+      .relation(Coleccion, 'juegos')
+      .of(id)
+      .remove(juegoId);
+  }
+
   private async buscarUsuario(id: number): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOneBy({ id });
     if (!usuario) {
