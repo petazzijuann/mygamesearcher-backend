@@ -455,3 +455,66 @@
 | Repetir el mismo `DELETE` | `404` `"El juego no está en la biblioteca del usuario"` |
 | `DELETE /biblioteca/1` (sin `usuarioId`) | `400` `["El usuario es obligatorio"]` |
 | `DELETE /juegos/1` y después `GET /biblioteca?usuarioId=1` | `204`, y el juego ya no aparece en ninguna biblioteca |
+
+## Paso 10 - CUU Generar recomendación personalizada (2026-10-06)
+
+**Qué se hizo:** Caso de uso central de la aplicación. El usuario elige plataformas, géneros y características; la API selecciona de 1 a 3 juegos según esos criterios (sin recomendar los que marcó como `YA_JUGADO`) y guarda la búsqueda con sus recomendaciones, que quedan disponibles para el historial.
+
+**Cómo se hizo:**
+- Rama `feature/recomendacion` creada desde `dev`.
+- `src/busqueda/busqueda.entity.ts` (nuevo): tabla `busqueda` con `usuario_id` (`ON DELETE CASCADE`), `fecha_busqueda` (`timestamptz`, automática), tablas intermedias `busqueda_plataforma`, `busqueda_genero` y `busqueda_caracteristica`, y la relación `recomendaciones` con `cascade: ['insert']`.
+- Archivos nuevos en `src/recomendacion/`:
+  - `recomendacion.entity.ts`: tabla `recomendacion` con `busqueda_id` y `juego_id` (ambas `ON DELETE CASCADE`), `orden`, y `calificacion`, `comentario` y `fecha_calificacion` opcionales (se completan cuando el usuario califique). Restricciones: única (`busqueda_id`, `juego_id`), `CHECK` de `orden` entre 1 y 3 y de `calificacion` entre 1 y 5.
+  - `dto/generar-recomendacion.dto.ts`: `usuarioId`, `plataformaIds` y `generoIds` obligatorios (al menos uno, sin repetidos), `caracteristicaIds` opcional.
+  - `recomendacion.service.ts`: `generar` y los privados `buscarCandidatos`, `calcularPuntaje` y `buscarBusqueda`.
+  - `recomendacion.controller.ts`: `POST /recomendaciones`.
+  - `recomendacion.module.ts`: registra `Busqueda`, `Recomendacion`, `Juego`, `Usuario` y los tres catálogos de criterios con `TypeOrmModule.forFeature`.
+- `src/app.module.ts`: se importó `RecomendacionModule`.
+- Después de las pruebas se borraron los datos y se reiniciaron las secuencias de ids.
+
+**Algoritmo:**
+1. Valida que existan el usuario y los ids de los criterios (`400` si falta alguno).
+2. Busca los candidatos con una consulta SQL: juegos que estén en al menos una de las plataformas elegidas y tengan al menos uno de los géneros elegidos, excluyendo con `NOT EXISTS` los que el usuario tiene como `YA_JUGADO` en su biblioteca.
+3. Calcula el puntaje de cada candidato: 2 puntos por cada género en común y 1 por cada característica en común.
+4. Ordena por puntaje (mayor primero); en caso de empate, por año de lanzamiento (más nuevo primero) y después por título. Se queda con los 3 primeros y les asigna `orden` 1, 2 y 3.
+5. Si no hay candidatos responde `404` "No hay juegos que coincidan con los criterios elegidos" y no guarda nada.
+6. Guarda la búsqueda con sus criterios y recomendaciones con un solo `save()`, y devuelve la búsqueda con las recomendaciones ordenadas y los datos completos de cada juego.
+
+**Por qué:**
+- Plataforma y género obligatorios, características opcionales: es lo mismo que exige un juego, así siempre hay con qué filtrar y puntuar.
+- Plataforma y género son filtro (el juego tiene que coincidir en al menos uno de cada uno) para que las recomendaciones sean fieles a lo pedido. Se descartó que el género solo sumara puntos, porque podía recomendar un juego de otro género que coincidiera en características.
+- El género pesa el doble que una característica porque es el criterio principal de la búsqueda. Los pesos y el máximo de 3 recomendaciones están en constantes al principio del service, para ajustarlos en un solo lugar.
+- Desempate por año y título: el resultado es siempre el mismo para los mismos datos, lo que permite probarlo y explicarlo. Se descartó desempatar al azar.
+- Los juegos `ME_INTERESA` sí se recomiendan: que le interesen no impide sugerirlos.
+- Sin candidatos no se guarda la búsqueda, porque el modelo exige de 1 a 3 recomendaciones por búsqueda.
+- `cascade: ['insert']` en `recomendaciones`: TypeORM inserta la búsqueda, sus criterios y sus recomendaciones en una misma transacción; o se guarda todo o nada.
+- El filtrado se hace en SQL (para no traer juegos que no sirven) y el puntaje en TypeScript (más fácil de leer y de explicar; con el volumen del TP no afecta el rendimiento).
+- Los `@Check` son una segunda barrera en la base: el orden lo asigna el código y la calificación la validará un DTO cuando se implemente.
+- Reglas de borrado: si se borra el usuario, se borran sus búsquedas y recomendaciones; si se borra un juego, se borran sus recomendaciones (no se bloquea al administrador); si se borra un catálogo que ningún juego usa, sale de los criterios de las búsquedas viejas. Consecuencias aceptadas: al borrar un juego puede quedar un hueco en el `orden` de una búsqueda (por ejemplo 1 y 3), y una búsqueda podría quedar sin recomendaciones si se borraran todos sus juegos. Se tienen en cuenta para el historial del Paso 11.
+
+**Requisito del TP que cubre:** CUU Generar recomendación personalizada, sin recomendar juegos marcados como `YA_JUGADO` (regularidad).
+
+**Cómo probarlo:** con la API levantada (`npm run start:dev`), cargar este escenario (plataformas P1 y P2, géneros RPG, Acción y Puzzle, características Mundo abierto y Multijugador, un usuario). La última columna es el puntaje para la búsqueda P1 + {RPG, Acción} + {Mundo abierto}:
+
+| Juego | Año | Plataformas | Géneros | Características | Puntaje |
+|---|---|---|---|---|---|
+| Alfa | 2020 | P1 | RPG, Acción | Mundo abierto | 5 |
+| Beta | 2022 | P1 | RPG | Mundo abierto, Multijugador | 3 |
+| Gamma | 2021 | P1 | RPG | Mundo abierto | 3 |
+| Delta | 2023 | P1 | Acción | — | 2 |
+| Epsilon | 2024 | P2 | RPG | — | (no está en P1) |
+| Zeta | 2024 | P1 | Puzzle | — | (no tiene RPG ni Acción) |
+
+| Request | Respuesta esperada |
+|---|---|
+| `POST /recomendaciones` `{"usuarioId": 1, "plataformaIds": [P1], "generoIds": [RPG, Acción], "caracteristicaIds": [Mundo abierto]}` | `201` con la búsqueda, sus criterios y las recomendaciones `1. Alfa`, `2. Beta`, `3. Gamma` (Beta gana el empate por ser más nuevo) |
+| Marcar Alfa como `YA_JUGADO` y Beta como `ME_INTERESA` en `/biblioteca`, y repetir la búsqueda | `201` con `1. Beta`, `2. Gamma`, `3. Delta` |
+| `POST /recomendaciones` `{"usuarioId": 1, "plataformaIds": [P2], "generoIds": [RPG]}` | `201` con una sola recomendación: `1. Epsilon` |
+| `POST /recomendaciones` `{"usuarioId": 1, "plataformaIds": [P2], "generoIds": [Puzzle]}` | `404` `"No hay juegos que coincidan con los criterios elegidos"` (no se guarda la búsqueda) |
+| `POST /recomendaciones` `{}` | `400` `["El usuario es obligatorio", "Debe elegir al menos una plataforma", "Debe elegir al menos un género"]` |
+| `POST /recomendaciones` con `"plataformaIds": []` | `400` `["Debe elegir al menos una plataforma"]` |
+| `POST /recomendaciones` con `"generoIds": [9999]` | `400` `"No existen los géneros con id: 9999"` |
+| `POST /recomendaciones` con `"usuarioId": 9999` | `400` `"No existe el usuario con id 9999"` |
+| `POST /recomendaciones` con `"plataformaIds": [P1, P1]` | `400` `["Las plataformas no pueden repetirse"]` |
+| `DELETE /juegos/{Gamma}` y revisar las búsquedas en la base | Gamma desaparece de las recomendaciones de las búsquedas anteriores |
+| Borrar el usuario en la base (`DELETE FROM usuario WHERE id = 1`) | Se borran en cascada sus búsquedas, recomendaciones, colecciones y biblioteca |

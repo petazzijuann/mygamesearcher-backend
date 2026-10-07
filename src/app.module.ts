@@ -11,6 +11,7 @@ import { JuegoModule } from './juego/juego.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { ColeccionModule } from './coleccion/coleccion.module';
 import { JuegoGuardadoModule } from './juego-guardado/juego-guardado.module';
+import { RecomendacionModule } from './recomendacion/recomendacion.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { JuegoGuardadoModule } from './juego-guardado/juego-guardado.module';
     UsuarioModule,
     ColeccionModule,
     JuegoGuardadoModule,
+    RecomendacionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
