@@ -701,3 +701,80 @@
 | `DELETE /usuarios/1` | `204` sin contenido; se borran en cascada su colección, búsqueda, recomendaciones y biblioteca |
 | `GET /usuarios/1` o repetir el `DELETE` | `404` `"No se encontró el usuario con id 1"` |
 | `GET /usuarios` | `200` con solo Beto Alvarez |
+
+## Paso 15 - Login con 2 niveles de acceso y protección de rutas (2026-10-06)
+
+**Qué se hizo:** Se agregó el inicio de sesión con JWT (`POST /auth/login`) y la protección de todas las rutas: por defecto piden un token válido, algunas son públicas y otras son solo para administradores. Hay dos niveles de acceso, `USUARIO` y `ADMIN`. Al arrancar, la API crea el primer administrador con los datos del `.env`. El reemplazo del `usuarioId` temporal por el usuario del token en colecciones, biblioteca y recomendaciones queda para el Paso 16.
+
+**Cómo se hizo:**
+- Rama `feature/login` creada desde `dev`.
+- `npm install @nestjs/jwt` (versión 12.0.2): paquete oficial de NestJS para firmar y verificar tokens JWT.
+- `.env.example`: variables `JWT_SECRET`, `JWT_EXPIRACION` (`8h`), `ADMIN_EMAIL` y `ADMIN_CONTRASENA`.
+- Archivos nuevos en `src/auth/`:
+  - `usuario-token.interface.ts`: tipos `UsuarioToken` (`id`, `email`, `rol`) y `ContenidoToken` (`sub`, `email`, `rol`).
+  - `decoradores/publico.decorator.ts`, `decoradores/roles.decorator.ts`, `decoradores/usuario-actual.decorator.ts`: `@Publico()`, `@Roles(...)` y `@UsuarioActual()`.
+  - `guards/autenticacion.guard.ts`: exige `Authorization: Bearer <token>` salvo en rutas `@Publico()`; verifica firma y vencimiento y deja el usuario en `request.usuario`.
+  - `guards/roles.guard.ts`: en rutas con `@Roles(...)`, responde `403` si el rol no está permitido.
+  - `verificar-acceso.ts`: función `verificarAcceso(usuarioActual, propietarioId)` que deja pasar al dueño del recurso o a un ADMIN y si no responde `403`.
+  - `dto/login.dto.ts`, `auth.service.ts`, `auth.controller.ts`: el login.
+  - `crear-admin.service.ts`: crea el primer administrador al arrancar (`OnApplicationBootstrap`).
+  - `auth.module.ts`: configura `JwtModule` (global) con `JWT_SECRET` y `JWT_EXPIRACION`, y registra los dos guards como globales (`APP_GUARD`).
+- `src/app.module.ts`: se importó `AuthModule`.
+- Controllers de género, plataforma, característica, clasificación de edad y juego: `@Publico()` en los `GET` y `@Roles(Rol.ADMIN)` en `POST`, `PATCH` y `DELETE`.
+- `src/app.controller.ts`: `@Publico()` en `GET /`.
+- Usuario:
+  - `dto/cambiar-rol.dto.ts` (nuevo): `rol` obligatorio (`USUARIO` o `ADMIN`).
+  - `usuario.controller.ts`: registro público; `GET /usuarios` y la nueva `PATCH /usuarios/:id/rol` solo ADMIN; el resto recibe `@UsuarioActual()` y se lo pasa al service.
+  - `usuario.service.ts`: control de acceso con `verificarAcceso`, método `cambiarRol`, protección del último administrador y `RONDAS_HASH` exportada.
+
+**Quién puede hacer qué:**
+
+| Ruta | Acceso |
+|---|---|
+| `POST /auth/login`, `POST /usuarios` (registro), `GET /` | Pública |
+| `GET` de géneros, plataformas, características, clasificaciones de edad y juegos | Pública |
+| `POST`, `PATCH` y `DELETE` de géneros, plataformas, características, clasificaciones de edad y juegos | Solo ADMIN |
+| `GET /usuarios`, `PATCH /usuarios/:id/rol` | Solo ADMIN |
+| `GET`, `PATCH` y `DELETE /usuarios/:id` | El propio usuario o un ADMIN |
+| `PATCH /usuarios/:id/contrasena` | Solo el propio usuario |
+| Colecciones, biblioteca y recomendaciones | Cualquier usuario con sesión iniciada (el control de dueño llega en el Paso 16) |
+
+**Por qué:**
+- JWT: el token va firmado con `JWT_SECRET` y lleva el id, email y rol del usuario, así la API verifica quién es sin consultar la base en cada pedido. Se usó `@nestjs/jwt` con guards propios en lugar de Passport: es la forma que muestra la documentación de NestJS y deja menos código "mágico" para explicar.
+- Guards globales con `@Publico()` como excepción: una ruta nueva queda protegida por defecto, y hay que marcar a propósito las que son públicas. El de autenticación corre antes que el de roles porque este necesita saber quién es el usuario.
+- El login responde `401` con el mismo mensaje ("Email o contraseña incorrectos") si el email no existe o si la contraseña no coincide, para no revelar qué emails están registrados. Responde `200` (no `201`) porque no crea ningún recurso.
+- Los `GET` de juegos y catálogos son públicos para poder mostrar el catálogo y los filtros sin iniciar sesión; modificarlos es solo de ADMIN.
+- Acceso a recursos de otro usuario: `403` "No tiene permiso para acceder a este recurso" (se eligió en lugar de `404` por ser más explícito). El control se hace en el service con `verificarAcceso`, para que el controller siga sin lógica.
+- El cambio de contraseña es solo del propio usuario, porque exige la contraseña actual, que un ADMIN no conoce.
+- Primer administrador desde el `.env`: funciona igual en local, en Supabase y en el deploy, sin tocar la base a mano. Si ya hay un ADMIN no hace nada; si el email ya está registrado, a ese usuario le asigna el rol ADMIN; si faltan las variables o la contraseña no tiene entre 8 y 72 caracteres, avisa en la consola sin impedir que la API arranque.
+- Si falta `JWT_SECRET`, la API no arranca ("Falta la variable de entorno JWT_SECRET en el .env"), para no firmar tokens sin clave.
+- No se puede quitar el rol ni borrar al último ADMIN (`409`), para que la API no se quede sin administradores.
+- Limitación conocida: si a alguien le cambian el rol, su token actual sigue con el rol anterior hasta que vence (`JWT_EXPIRACION`) o hasta que vuelve a iniciar sesión. Es el funcionamiento normal de los JWT.
+
+**Requisito del TP que cubre:** Login con 2 niveles de acceso y protección de rutas (aprobación).
+
+**Cómo probarlo:** completar en el `.env` `JWT_SECRET` (por ejemplo, con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), `JWT_EXPIRACION=8h`, `ADMIN_EMAIL` y `ADMIN_CONTRASENA`. Al correr `npm run start:dev`, la consola muestra `[CrearAdmin] Se creó el administrador <ADMIN_EMAIL>` (solo la primera vez). Para usar un token en Postman: hacer el login, copiar el `token` de la respuesta y mandarlo en el header `Authorization: Bearer <token>` (pestaña Authorization, tipo "Bearer Token").
+
+| Request | Respuesta esperada |
+|---|---|
+| `GET /`, `GET /juegos`, `GET /generos` sin token | `200` |
+| `POST /generos` sin token | `401` `"Debe iniciar sesión"` |
+| `POST /generos` con un token vencido, inventado o firmado con otra clave | `401` `"La sesión no es válida o expiró"` |
+| `POST /auth/login` con un email que no existe o con la contraseña incorrecta | `401` `"Email o contraseña incorrectos"` |
+| `POST /auth/login` `{"email": "no-es-email"}` | `400` `["El email no es válido", "La contraseña es obligatoria"]` |
+| `POST /auth/login` con `ADMIN_EMAIL` (en mayúsculas o con espacios también) y `ADMIN_CONTRASENA` | `200` con `token` y `usuario` (`"rol": "ADMIN"`), sin hash |
+| `POST /usuarios` (registro, sin token) y `POST /auth/login` con ese usuario | `201` y `200` con `"rol": "USUARIO"` |
+| `POST /generos` con token de USUARIO (también `PATCH` y `DELETE` de catálogos y juegos) | `403` `"No tiene permiso para realizar esta acción"` |
+| `POST /generos`, `/plataformas`, `/clasificaciones-edad`, `/juegos` con token de ADMIN | `201` |
+| `GET` y `PATCH /usuarios/{propio id}` con token de USUARIO | `200` |
+| `GET`, `PATCH` o `DELETE /usuarios/{id de otro}` con token de USUARIO | `403` `"No tiene permiso para acceder a este recurso"` |
+| `GET /usuarios/{id}` sin token | `401` `"Debe iniciar sesión"` |
+| `GET /usuarios` con token de USUARIO / de ADMIN | `403` / `200` |
+| `PATCH /usuarios/{id de otro}/contrasena` con token de ADMIN | `403` |
+| `PATCH /usuarios/{propio id}/contrasena` con la contraseña actual correcta | `204`; después el login funciona con la nueva |
+| `PATCH /usuarios/{id del admin}/rol` `{"rol": "USUARIO"}` siendo el único ADMIN (o `DELETE` de su usuario) | `409` `"No se puede quitar el rol al último administrador"` |
+| `PATCH /usuarios/{id}/rol` `{"rol": "JEFE"}` con token de ADMIN | `400` `["El rol debe ser USUARIO o ADMIN"]` |
+| `PATCH /usuarios/{id}/rol` `{"rol": "ADMIN"}` con token de ADMIN | `200` con el rol nuevo; el usuario tiene que volver a iniciar sesión para usarlo |
+| `PATCH /usuarios/{id}/rol` con token de USUARIO | `403` |
+| `GET /colecciones`, `GET /biblioteca`, `POST /recomendaciones` sin token | `401` `"Debe iniciar sesión"` |
+| Volver a arrancar la API con el admin ya creado | No crea otro administrador ni muestra el mensaje |

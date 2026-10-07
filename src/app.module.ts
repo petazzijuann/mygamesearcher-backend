@@ -12,6 +12,7 @@ import { UsuarioModule } from './usuario/usuario.module';
 import { ColeccionModule } from './coleccion/coleccion.module';
 import { JuegoGuardadoModule } from './juego-guardado/juego-guardado.module';
 import { RecomendacionModule } from './recomendacion/recomendacion.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RecomendacionModule } from './recomendacion/recomendacion.module';
     ColeccionModule,
     JuegoGuardadoModule,
     RecomendacionModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

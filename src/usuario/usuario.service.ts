@@ -1,20 +1,25 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
+import { UsuarioToken } from '../auth/usuario-token.interface';
+import { verificarAcceso } from '../auth/verificar-acceso';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { CambiarContrasenaDto } from './dto/cambiar-contrasena.dto';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
+import { Rol } from './rol.enum';
 import { Usuario } from './usuario.entity';
 
-// Rondas de bcrypt: más rondas, más lento probar contraseñas por fuerza bruta
-const RONDAS_HASH = 10;
+// Rondas de bcrypt: más rondas, más lento probar contraseñas por fuerza bruta.
+// Exportada para que el alta del primer administrador use el mismo valor
+export const RONDAS_HASH = 10;
 
 @Injectable()
 export class UsuarioService {
@@ -45,7 +50,14 @@ export class UsuarioService {
     return this.buscarPorId(guardado.id);
   }
 
-  async buscarPorId(id: number): Promise<Usuario> {
+  // usuarioActual llega desde el controller: solo el propio usuario o un ADMIN
+  async buscarPorId(
+    id: number,
+    usuarioActual?: UsuarioToken,
+  ): Promise<Usuario> {
+    if (usuarioActual) {
+      verificarAcceso(usuarioActual, id);
+    }
     const usuario = await this.usuarioRepository.findOne({
       where: { id },
       relations: { plataforma: true },
@@ -63,8 +75,12 @@ export class UsuarioService {
     });
   }
 
-  async actualizar(id: number, dto: ActualizarUsuarioDto): Promise<Usuario> {
-    const usuario = await this.buscarPorId(id);
+  async actualizar(
+    id: number,
+    dto: ActualizarUsuarioDto,
+    usuarioActual: UsuarioToken,
+  ): Promise<Usuario> {
+    const usuario = await this.buscarPorId(id, usuarioActual);
     const { plataformaId, ...datos } = dto;
 
     // Solo si viene un email (no null: TypeORM 1.0 da error con null en el where).
@@ -91,7 +107,14 @@ export class UsuarioService {
   async cambiarContrasena(
     id: number,
     dto: CambiarContrasenaDto,
+    usuarioActual: UsuarioToken,
   ): Promise<void> {
+    // Solo el propio usuario: exige la contraseña actual, que un ADMIN no conoce
+    if (usuarioActual.id !== id) {
+      throw new ForbiddenException(
+        'No tiene permiso para acceder a este recurso',
+      );
+    }
     // El hash tiene select: false, así que se pide explícitamente solo para compararlo
     const usuario = await this.usuarioRepository
       .createQueryBuilder('usuario')
@@ -115,12 +138,32 @@ export class UsuarioService {
     });
   }
 
-  async eliminar(id: number): Promise<void> {
-    if (!(await this.usuarioRepository.existsBy({ id }))) {
-      throw new NotFoundException(`No se encontró el usuario con id ${id}`);
+  async eliminar(id: number, usuarioActual: UsuarioToken): Promise<void> {
+    const usuario = await this.buscarPorId(id, usuarioActual);
+    if (usuario.rol === Rol.ADMIN) {
+      await this.validarNoEsUltimoAdmin();
     }
     // DELETE directo: Postgres borra en cascada colecciones, búsquedas, recomendaciones y biblioteca
     await this.usuarioRepository.delete(id);
+  }
+
+  // Solo ADMIN (lo controla @Roles en el controller)
+  async cambiarRol(id: number, rol: Rol): Promise<Usuario> {
+    const usuario = await this.buscarPorId(id);
+    if (usuario.rol === Rol.ADMIN && rol !== Rol.ADMIN) {
+      await this.validarNoEsUltimoAdmin();
+    }
+    await this.usuarioRepository.update(id, { rol });
+    return this.buscarPorId(id);
+  }
+
+  // Evita que la API se quede sin administradores
+  private async validarNoEsUltimoAdmin(): Promise<void> {
+    if ((await this.usuarioRepository.countBy({ rol: Rol.ADMIN })) <= 1) {
+      throw new ConflictException(
+        'No se puede quitar el rol al último administrador',
+      );
+    }
   }
 
   private async buscarPlataforma(id: number): Promise<Plataforma> {
