@@ -1,98 +1,134 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DGame (MyGameSearcher) - Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST que recomienda de 1 a 3 videojuegos según los géneros, características y plataformas que elige el usuario. Además permite armar una biblioteca personal (juegos que le interesan o que ya jugó), colecciones de juegos y consultar y calificar el historial de recomendaciones.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Trabajo práctico de Desarrollo de Software (UTN FRRo). El frontend está en otro repositorio: `mygamesearcher-frontend`.
 
-## Description
+## Tecnologías
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- [NestJS](https://nestjs.com) 11 con TypeScript
+- PostgreSQL (Supabase para pruebas y entrega, o una base local) con TypeORM
+- Validación de datos con class-validator y class-transformer
+- Login con JWT (`@nestjs/jwt`) y contraseñas hasheadas con bcrypt (`bcryptjs`)
+- Documentación de la API con Swagger (`@nestjs/swagger`)
+- Tests con Jest y Supertest
 
-## Project setup
+## Requisitos previos
+
+- **Node.js 20 o superior** (probado con Node 22) y npm.
+- **Una base de datos PostgreSQL vacía.** Puede ser:
+  - **Supabase** (recomendado): crear un proyecto en https://supabase.com, entrar a **Connect → Session pooler → View parameters** y copiar host, puerto, usuario y base. La contraseña es la que se eligió al crear el proyecto (se puede resetear en *Project Settings → Database*). Usar el *Session pooler* y no la conexión directa, porque la directa es solo IPv6.
+  - **PostgreSQL local**: crear una base vacía (por ejemplo `createdb dgame`) y poner `DB_SSL=false`.
+
+No hace falta crear las tablas: la API las crea sola al arrancar (ver más abajo).
+
+## Instalación
 
 ```bash
-$ npm install
+git clone <url-del-repositorio>
+cd mygamesearcher-backend
+npm install
 ```
 
-## Compile and run the project
+Después crear el archivo `.env` copiando `.env.example` y completar los valores. El `.env` nunca se sube al repositorio.
+
+| Variable | Qué es | Ejemplo |
+|---|---|---|
+| `NODE_ENV` | Entorno. Con `development` la API crea y actualiza las tablas sola | `development` |
+| `PORT` | Puerto de la API | `3000` |
+| `DB_HOST` | Host de PostgreSQL | `aws-0-sa-east-1.pooler.supabase.com` o `localhost` |
+| `DB_PORT` | Puerto de PostgreSQL | `5432` |
+| `DB_USER` | Usuario de PostgreSQL (en el pooler de Supabase tiene la forma `postgres.<id-del-proyecto>`) | `postgres.abcdefghijk` |
+| `DB_PASS` | Contraseña de la base | |
+| `DB_NAME` | Nombre de la base (en Supabase es `postgres`) | `postgres` |
+| `DB_SSL` | `true` para Supabase, `false` para una base local sin SSL | `true` |
+| `JWT_SECRET` | Clave para firmar los tokens de sesión. Tiene que ser larga y al azar; sin ella la API no arranca | (ver comando abajo) |
+| `JWT_EXPIRACION` | Duración del token | `8h` |
+| `ADMIN_EMAIL` | Email del primer administrador | `admin@dgame.com` |
+| `ADMIN_CONTRASENA` | Contraseña del primer administrador (de 8 a 72 caracteres) | |
+
+Para generar un `JWT_SECRET`:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-## Run tests
+## Cómo correrlo
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
+En la consola tiene que aparecer:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```
+API escuchando en http://localhost:3000
+Documentación en http://localhost:3000/api
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+En el **primer arranque**:
 
-## Resources
+- **Se crean las tablas** en la base, porque con `NODE_ENV=development` TypeORM sincroniza el esquema con las entidades (`synchronize`).
+- **Se crea el administrador** con `ADMIN_EMAIL` y `ADMIN_CONTRASENA`, si todavía no hay ningún usuario ADMIN. La consola muestra `Se creó el administrador ...`.
 
-Check out a few resources that may come in handy when working with NestJS:
+Para comprobar que responde: `GET http://localhost:3000/` devuelve `Hello World!`.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+> Con `NODE_ENV=production` la API **no** crea ni modifica tablas (`synchronize` está desactivado y todavía no hay migraciones). Para una base nueva, levantar la API una vez con `NODE_ENV=development`.
 
-## Support
+## Comandos
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Comando | Qué hace |
+|---|---|
+| `npm run start:dev` | Levanta la API en modo desarrollo (se reinicia sola al guardar cambios) |
+| `npm run start` | Levanta la API sin reinicio automático |
+| `npm run build` y `npm run start:prod` | Compila a `dist/` y corre la versión compilada |
+| `npm run test` | Tests unitarios (algoritmo de recomendación, control de acceso y guard de autenticación) |
+| `npm run test:e2e` | Test de integración del login y la protección de rutas |
+| `npm run docs:openapi` | Regenera `docs/openapi.json` (no necesita `.env` ni base de datos) |
+| `npm run lint` | Revisa y corrige el estilo del código |
 
-## Stay in touch
+Los tests no necesitan base de datos ni `.env`.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Documentación de la API
 
-## License
+- **http://localhost:3000/api**: documentación interactiva (Swagger) con todas las rutas, los datos que reciben, las respuestas, los errores posibles y quién puede usar cada una. Se pueden probar desde ahí.
+- **http://localhost:3000/api-json**: el mismo contenido en formato OpenAPI.
+- **[docs/openapi.json](./docs/openapi.json)**: la documentación exportada, para verla sin levantar la API (por ejemplo, pegándola en https://editor.swagger.io o importándola en Postman).
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+**Cómo usar las rutas protegidas:** hacer `POST /auth/login` con email y contraseña, copiar el `token` de la respuesta y mandarlo en el header `Authorization: Bearer <token>` (en Swagger, con el botón **Authorize**).
+
+**Niveles de acceso:**
+
+| Quién | Qué puede hacer |
+|---|---|
+| Cualquiera, sin sesión | Registrarse, iniciar sesión, ver juegos y catálogos (géneros, plataformas, características, clasificaciones de edad) |
+| Usuario con sesión | Sus colecciones, su biblioteca, generar recomendaciones y consultar o calificar su historial, ver y editar su perfil |
+| ADMIN | Además, crear, modificar y eliminar juegos y catálogos, listar usuarios y cambiar roles |
+
+Todas las respuestas de error tienen la forma `{ "statusCode", "message", "error" }`, con el mensaje en español.
+
+## Estructura del proyecto
+
+```
+src/
+  main.ts                 -> arranque de la API
+  app.module.ts           -> configuración (.env, base de datos) y registro de módulos
+  comun/                  -> piezas compartidas (validación global, filtro de errores, Swagger, pipes)
+  auth/                   -> login, JWT, guards y decoradores de acceso
+  genero/ plataforma/ caracteristica/ clasificacion-edad/   -> catálogos (CRUD simples)
+  juego/                  -> CRUD de juegos y listado con filtro por título
+  usuario/                -> registro y CRUD de usuarios
+  coleccion/              -> CRUD de colecciones y CUU Administrar colección
+  juego-guardado/         -> CUU Administrar biblioteca personal (/biblioteca)
+  busqueda/ recomendacion/ -> CUU Generar recomendación e historial
+test/                     -> test de integración
+docs/
+  bitacora.md             -> registro de cada paso del desarrollo
+  openapi.json            -> documentación de la API exportada
+```
+
+Cada módulo sigue la misma arquitectura por capas: **entity** (tabla en la base), **dto** (validación de lo que llega), **service** (lógica de negocio) y **controller** (rutas HTTP, sin lógica).
+
+## Bitácora
+
+El detalle de cada paso del desarrollo (qué se hizo, cómo, por qué y cómo probarlo) está en [docs/bitacora.md](./docs/bitacora.md).

@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { Rol } from '../../usuario/rol.enum';
 import { ROLES } from '../decoradores/roles.decorator';
 import { UsuarioToken } from '../usuario-token.interface';

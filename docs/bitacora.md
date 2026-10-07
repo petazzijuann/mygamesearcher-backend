@@ -940,3 +940,36 @@
 | Ver `GET /juegos/{id}` | Respuestas `200` (esquema `Juego`), `400` y `404` |
 | Ver el esquema `ErrorRespuestaDto` | `statusCode`, `message` (texto o lista) y `error`, con ejemplos |
 | `npm run test` y `npm run test:e2e` | Siguen pasando (13 y 6 tests) |
+
+## Paso 20 - README y ajustes de la auditoría de regularidad (2026-10-07)
+
+**Qué se hizo:** Se auditó el repositorio contra los requisitos de regularidad de la cátedra. Todos se cumplían salvo el README, que lo hacía a medias. Se corrigió eso y los detalles menores que surgieron: un README principal que permite instalar y correr el proyecto sin conocerlo, el enlace roto de `docs/README.md`, la versión de Node requerida en `package.json` y los imports de `express` que se usan solo como tipo.
+
+**Cómo se hizo:**
+- Rama `feature/readme-y-ajustes` creada desde `dev`.
+- `README.md` (raíz): se reemplazó el README por defecto de NestJS (en inglés y sin información del proyecto) por uno del proyecto, con:
+  - descripción y tecnologías;
+  - requisitos previos (Node 20 o superior; cómo conseguir una base PostgreSQL en Supabase o local);
+  - instalación y una tabla con cada variable del `.env`;
+  - qué pasa en el primer arranque (creación de tablas y del administrador);
+  - comandos, documentación de la API, niveles de acceso, estructura de carpetas y enlace a la bitácora.
+- `docs/README.md`: pasó a ser un índice de la carpeta `docs/` (bitácora y `openapi.json`) que remite al README principal. Se eliminó el enlace roto a `./docs/README.md`.
+- `package.json`: se agregó `"engines": { "node": ">=20" }`.
+- `src/auth/decoradores/usuario-actual.decorator.ts`, `src/auth/guards/autenticacion.guard.ts` y `src/auth/guards/roles.guard.ts`: `import { Request } from 'express'` pasó a `import type { Request } from 'express'`.
+
+**Por qué:**
+- El README de la raíz es lo primero que se ve en GitHub y era el único requisito de regularidad que no se cumplía del todo. Las instrucciones existían en `docs/README.md`, pero sin requisitos previos ni la explicación de cómo conseguir la base. Se concentró todo en el README principal para no mantener dos copias, y `docs/README.md` quedó como índice.
+- Node 20 es la versión mínima que exige NestJS 11 (`@nestjs/core` declara `"node": ">= 20"`); el proyecto se probó con Node 22. Con `engines`, npm avisa si alguien usa una versión más vieja.
+- `express` no es una dependencia directa (viene con `@nestjs/platform-express`) y en esos archivos solo se usa el tipo `Request`, que aporta `@types/express`. Con `import type` queda explícito que no se carga en tiempo de ejecución.
+- No se agregaron migraciones: con `NODE_ENV=production`, `synchronize` está desactivado (regla del CLAUDE.md) y la API no crea tablas en una base nueva. No es un requisito de regularidad; se dejó aclarado en el README y se resuelve en el paso del deploy.
+
+**Requisito del TP que cubre:** README que permita instalar y correr el proyecto sin conocerlo (regularidad, backend).
+
+**Cómo probarlo:**
+
+| Acción | Resultado esperado |
+|---|---|
+| Abrir el repositorio en GitHub | Se ve el README del proyecto en español, con instalación, variables del `.env`, comandos y documentación |
+| Seguir el README en una carpeta nueva (clonar, `npm install`, crear el `.env`, `npm run start:dev`) | La API arranca, crea las tablas y el administrador, y muestra `Documentación en http://localhost:3000/api` |
+| Abrir `docs/README.md` | Índice con enlaces a la bitácora, a `openapi.json` y al README principal, sin enlaces rotos |
+| `npm run lint`, `npm run test` y `npm run test:e2e` | Sin errores; 13 y 6 tests pasan |

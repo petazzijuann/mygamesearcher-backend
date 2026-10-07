@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { ES_PUBLICO } from '../decoradores/publico.decorator';
 import { ContenidoToken, UsuarioToken } from '../usuario-token.interface';
 

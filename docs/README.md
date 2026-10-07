@@ -1,39 +1,8 @@
-# MyGameSearcher - Backend
+# MyGameSearcher - Backend: documentación
 
-[Documentación](./docs/README.md)
+La instalación, la configuración del `.env`, los comandos y el uso de la API están en el [README principal](../README.md).
 
-## Instalación
-1. Clonar el repo
-2. `npm install`
-3. Crear `.env` en base a `.env.example`
-4. `npm run start:dev`
+En esta carpeta:
 
-En el `.env` hay que completar los datos de la base (`DB_*`), `JWT_SECRET` (una clave larga al azar, por ejemplo con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`), `JWT_EXPIRACION` y los datos del primer administrador (`ADMIN_EMAIL` y `ADMIN_CONTRASENA`), que se crea solo al arrancar la API si no hay ninguno.
-
-## Documentación de la API
-
-Con la API levantada, la documentación interactiva (Swagger) está en:
-
-- **http://localhost:3000/api**: todas las rutas agrupadas, con sus datos de entrada, respuestas exitosas, errores posibles y quién puede usarlas. Se pueden probar desde ahí ("Try it out").
-- **http://localhost:3000/api-json**: el mismo contenido en formato OpenAPI (JSON), para importarlo en Postman u otras herramientas.
-
-Para probar las rutas que piden sesión: hacer `POST /auth/login`, copiar el `token` de la respuesta y pegarlo en el botón **Authorize**.
-
-Sin levantar la API, la misma documentación está exportada en [openapi.json](./openapi.json). Se puede ver pegándola en https://editor.swagger.io. Para regenerarla después de cambiar rutas o DTOs:
-
-```
-npm run docs:openapi
-```
-
-No necesita `.env` ni conexión a la base.
-
-## Tests
-
-- `npm run test`: tests unitarios (algoritmo de recomendación, control de acceso y guard de autenticación).
-- `npm run test:e2e`: test de integración del login y la protección de rutas.
-
-Ninguno necesita base de datos.
-
-## Bitácora
-
-El detalle de cada paso del desarrollo (qué se hizo, cómo, por qué y cómo probarlo) está en [bitacora.md](./bitacora.md).
+- [bitacora.md](./bitacora.md): registro de cada paso del desarrollo (qué se hizo, cómo, por qué y cómo probarlo).
+- [openapi.json](./openapi.json): documentación de la API exportada en formato OpenAPI. Se puede ver pegándola en https://editor.swagger.io o importándola en Postman, y se regenera con `npm run docs:openapi`. Con la API levantada, la misma documentación es interactiva en http://localhost:3000/api.
