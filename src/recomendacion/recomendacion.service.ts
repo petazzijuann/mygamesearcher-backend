@@ -19,18 +19,12 @@ import { Usuario } from '../usuario/usuario.entity';
 import { CalificarRecomendacionDto } from './dto/calificar-recomendacion.dto';
 import { FiltroHistorialDto } from './dto/filtro-historial.dto';
 import { GenerarRecomendacionDto } from './dto/generar-recomendacion.dto';
+import { elegirRecomendados } from './elegir-recomendados';
 import { Recomendacion } from './recomendacion.entity';
 
 // Las fechas del filtro del historial se interpretan en hora de Argentina
 // (la base guarda en UTC: una búsqueda del 6/10 a las 22:00 queda como 7/10 01:00 UTC)
 const ZONA_HORARIA = 'America/Argentina/Buenos_Aires';
-
-// Cantidad máxima de juegos recomendados por búsqueda
-const MAXIMO_RECOMENDACIONES = 3;
-
-// Peso de cada coincidencia en el puntaje: el género es el criterio principal
-const PUNTOS_POR_GENERO = 2;
-const PUNTOS_POR_CARACTERISTICA = 1;
 
 // Relaciones del juego que se devuelven en cada recomendación
 const RELACIONES_JUEGO = {
@@ -96,18 +90,12 @@ export class RecomendacionService {
       plataformaIds,
       generoIds,
     );
-    const elegidos = candidatos
-      .map((juego) => ({
-        juego,
-        puntaje: this.calcularPuntaje(juego, generoIds, caracteristicaIds),
-      }))
-      .sort(
-        (a, b) =>
-          b.puntaje - a.puntaje ||
-          b.juego.anioLanzamiento - a.juego.anioLanzamiento ||
-          a.juego.titulo.localeCompare(b.juego.titulo, 'es'),
-      )
-      .slice(0, MAXIMO_RECOMENDACIONES);
+    // El puntaje y el orden están en elegir-recomendados.ts (función pura, con tests unitarios)
+    const elegidos = elegirRecomendados(
+      candidatos,
+      generoIds,
+      caracteristicaIds,
+    );
 
     // 5. Sin candidatos no se guarda nada (cada búsqueda tiene de 1 a 3 recomendaciones)
     if (elegidos.length === 0) {
@@ -122,7 +110,7 @@ export class RecomendacionService {
       plataformas,
       generos,
       caracteristicas,
-      recomendaciones: elegidos.map(({ juego }, indice) => ({
+      recomendaciones: elegidos.map((juego, indice) => ({
         juego,
         orden: indice + 1,
       })),
@@ -295,22 +283,5 @@ export class RecomendacionService {
       where: { id: In(filas.map((fila) => fila.id)) },
       relations: RELACIONES_JUEGO,
     });
-  }
-
-  private calcularPuntaje(
-    juego: Juego,
-    generoIds: number[],
-    caracteristicaIds: number[],
-  ): number {
-    const generosEnComun = juego.generos.filter((genero) =>
-      generoIds.includes(genero.id),
-    ).length;
-    const caracteristicasEnComun = juego.caracteristicas.filter(
-      (caracteristica) => caracteristicaIds.includes(caracteristica.id),
-    ).length;
-    return (
-      generosEnComun * PUNTOS_POR_GENERO +
-      caracteristicasEnComun * PUNTOS_POR_CARACTERISTICA
-    );
   }
 }

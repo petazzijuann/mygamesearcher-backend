@@ -832,3 +832,34 @@
 | `GET /recomendaciones/{de U1}` con token del admin | `200` |
 | `DELETE /recomendaciones/{id}` con token de U1 | `204` |
 | Con el token de un usuario que se borró: `POST /colecciones`, `POST /biblioteca` o `POST /recomendaciones` | `401` `"La sesión no es válida o expiró"` |
+
+## Paso 17 - Tests automatizados y de integración (2026-10-06)
+
+**Qué se hizo:** Se agregaron 3 tests unitarios (algoritmo de recomendación, control de acceso y guard de autenticación) y 1 test de integración del login y la protección de rutas. Ninguno necesita base de datos: se pueden correr en cualquier computadora sin tocar Supabase.
+
+**Cómo se hizo:**
+- Rama `feature/tests` creada desde `dev`.
+- `src/recomendacion/elegir-recomendados.ts` (nuevo): se sacaron del `RecomendacionService` el cálculo del puntaje y el ordenamiento, como funciones puras (`calcularPuntaje`, `elegirRecomendados`) junto con las constantes `MAXIMO_RECOMENDACIONES`, `PUNTOS_POR_GENERO` y `PUNTOS_POR_CARACTERISTICA`. La lógica no cambió; el service ahora llama a `elegirRecomendados`.
+- `src/comun/configurar-app.ts` (nuevo): el `ValidationPipe` y el filtro global de errores que estaban en `main.ts`, en una función `configurarApp(app)` que usan `main.ts` y el test de integración.
+- Tests unitarios (`npm run test`):
+  - `src/recomendacion/elegir-recomendados.spec.ts`: puntaje (2 por género, 1 por característica), orden por puntaje, máximo de 3, desempate por año y título, menos de 3 candidatos y ninguno. Usa el mismo escenario de la prueba manual del Paso 10.
+  - `src/auth/verificar-acceso.spec.ts`: el dueño pasa, un ADMIN pasa, otro USUARIO recibe `403`.
+  - `src/auth/guards/autenticacion.guard.spec.ts`: ruta `@Publico()` sin token, sin token `401`, token firmado con otra clave `401`, token vencido `401`, token válido (deja el usuario en el request).
+- Test de integración (`npm run test:e2e`): `test/auth.e2e-spec.ts` levanta una aplicación Nest con el `AuthController`, el `GeneroController`, el `AuthService`, el JWT, los dos guards globales y `configurarApp`, y le hace requests HTTP reales con `supertest`. Lo único simulado es la base (el repositorio de usuarios y el `GeneroService`). Prueba: `GET /generos` público, `POST /generos` sin token `401`, login incorrecto `401` y con body inválido `400`, login correcto con token y sin hash, USUARIO no puede crear géneros `403`, ADMIN sí (y el body llega al service con `trim` aplicado y sin campos de más), body vacío `400`.
+- Se borró `test/app.e2e-spec.ts` (el test de ejemplo de Nest): levantaba toda la aplicación con la conexión real a la base.
+- Versiones de dependencias: `@nestjs/jwt` pasó de `12.0.2` a `11.0.2` y `@nestjs/mapped-types` de `12.0.0` a `2.1.1`.
+
+**Por qué:**
+- Se testea primero lo que es más importante y más fácil de romper sin darse cuenta: el criterio de recomendación (corazón de la app) y la seguridad (quién puede acceder a qué).
+- El algoritmo se pasó a funciones puras para poder probarlo sin base de datos ni mocks: recibe juegos y devuelve juegos.
+- El test de integración prueba el recorrido HTTP completo (ruta, validación, guards, service, JWT y filtro de errores) con la misma configuración que la API real (`configurarApp`). Se simuló solo la base para que el test sea rápido, repetible y no escriba datos en Supabase.
+- Cambio de versiones: las versiones 12 de `@nestjs/jwt` y `@nestjs/mapped-types` se publicaron solo como módulos ES. Node las ejecuta, pero Jest (que trabaja en CommonJS) no puede cargarlas y los tests no arrancaban. Las versiones `11.0.2` y `2.1.1` son las que corresponden a NestJS 11 (el que usa el proyecto), vienen en CommonJS y tienen la misma API. Se verificó levantando la API real contra Supabase: login, alta, edición con `PartialType` y baja de un género funcionaron igual.
+
+**Requisito del TP que cubre:** 3 tests automatizados + 1 de integración (aprobación).
+
+**Cómo probarlo:**
+
+| Comando | Resultado esperado |
+|---|---|
+| `npm run test` | `Test Suites: 4 passed` y `Tests: 13 passed` (los 3 archivos nuevos y el de ejemplo `app.controller.spec.ts`) |
+| `npm run test:e2e` | `Test Suites: 1 passed` y `Tests: 6 passed` |
