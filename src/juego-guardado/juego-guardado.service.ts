@@ -14,8 +14,16 @@ import { GuardarJuegoDto } from './dto/guardar-juego.dto';
 import { EstadoJuego } from './estado-juego.enum';
 import { JuegoGuardado } from './juego-guardado.entity';
 
-// Relaciones que se devuelven siempre junto con cada juego guardado
-const RELACIONES = { juego: { clasificacionEdad: true } };
+// Relaciones que se devuelven siempre junto con cada juego guardado:
+// el juego completo, como lo documenta openapi.json (esquema Juego)
+export const RELACIONES = {
+  juego: {
+    clasificacionEdad: true,
+    plataformas: true,
+    generos: true,
+    caracteristicas: true,
+  },
+};
 
 @Injectable()
 export class JuegoGuardadoService {

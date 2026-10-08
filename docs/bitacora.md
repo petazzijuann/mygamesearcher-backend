@@ -1007,3 +1007,29 @@
 | `GET /generos` con `Origin: http://sitio-malicioso.com` | Sin el header `Access-Control-Allow-Origin` (el navegador bloquea la respuesta) |
 | Arrancar con `FRONTEND_URL="http://localhost:5173, https://dgame.vercel.app/"` y pedir con `Origin: https://dgame.vercel.app` | La consola muestra las dos direcciones (sin la `/` final) y la respuesta incluye `Access-Control-Allow-Origin: https://dgame.vercel.app` |
 | `npm run test` | 15 tests pasan (los 13 anteriores y los 2 de `configurar-cors.spec.ts`) |
+
+## Paso 22 - Biblioteca: el juego completo en las respuestas (2026-10-08)
+
+**Qué se hizo:** Se corrigió la biblioteca (`/biblioteca`) para que cada juego guardado venga con sus plataformas, géneros y características, además de la clasificación de edad. Antes solo traía la clasificación, aunque la documentación (`docs/openapi.json`) indica que el juego viene completo. El problema apareció al conectar la pantalla "Mi biblioteca" del frontend, que necesita los géneros.
+
+**Cómo se hizo:**
+- Rama `feature/biblioteca-juego-completo` creada desde `dev`.
+- `src/juego-guardado/juego-guardado.service.ts`: la constante `RELACIONES` pasó de `{ juego: { clasificacionEdad: true } }` a `{ juego: { clasificacionEdad: true, plataformas: true, generos: true, caracteristicas: true } }`, y se exporta para el test. Aplica a todas las respuestas de la biblioteca: `GET /biblioteca`, `POST /biblioteca` y `PATCH /biblioteca/:juegoId`.
+- `src/juego-guardado/juego-guardado.service.spec.ts` (nuevo): tests unitarios que verifican que las relaciones incluyen las cuatro y que el listado y el cambio de estado las piden.
+
+**Por qué:**
+- La documentación es el contrato con el frontend: el esquema `JuegoGuardado` tiene `juego` con el esquema `Juego` completo (clasificación, plataformas, géneros y características). El código no lo cumplía, y el frontend fallaba al leer `juego.generos`. Se corrigió el código y no la documentación, porque la biblioteca necesita esos datos para mostrarse.
+- Se usan las mismas relaciones que el detalle de un juego (`GET /juegos/:id`), así un juego tiene la misma forma en las dos respuestas.
+- `docs/openapi.json` no cambió (se regeneró y quedó igual), porque ya documentaba el juego completo.
+- No se probó contra la base compartida porque ahora tiene datos reales y probar la biblioteca requiere crear un usuario y guardar juegos. Los nombres de las relaciones son los mismos que ya usa `GET /juegos/:id` con la base real.
+
+**Requisito del TP que cubre:** CUU Administrar biblioteca personal (corrección de la respuesta para el frontend).
+
+**Cómo probarlo:** con la API levantada, un usuario con sesión y al menos un juego guardado en su biblioteca:
+
+| Request | Respuesta esperada |
+|---|---|
+| `GET /biblioteca` | `200`; cada elemento trae `juego` con `clasificacionEdad`, `plataformas`, `generos` y `caracteristicas` |
+| `POST /biblioteca` `{"juegoId": 1, "estado": "ME_INTERESA"}` | `201` con el juego completo |
+| `PATCH /biblioteca/1` `{"estado": "YA_JUGADO"}` | `200` con el juego completo |
+| `npm run test` | 18 tests pasan (los 15 anteriores y los 3 de `juego-guardado.service.spec.ts`) |
