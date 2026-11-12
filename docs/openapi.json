@@ -3050,6 +3050,46 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Límite de solicitudes de IA alcanzado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Respuesta de IA inválida o incompleta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "IA no disponible o configuración inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Tiempo de espera de IA agotado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorRespuestaDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3057,7 +3097,7 @@
             "bearer": []
           }
         ],
-        "summary": "CUU Generar recomendación: de 1 a 3 juegos según los criterios, sin los YA_JUGADO (usuario con sesión)",
+        "summary": "CUU Generar recomendación SISTEMA (por defecto) o IA: de 1 a 3 juegos sin los YA_JUGADO (usuario con sesión)",
         "tags": [
           "Recomendaciones"
         ]
@@ -4075,6 +4115,14 @@
       "GenerarRecomendacionDto": {
         "type": "object",
         "properties": {
+          "tipo": {
+            "enum": [
+              "SISTEMA",
+              "IA"
+            ],
+            "type": "string",
+            "default": "SISTEMA"
+          },
           "plataformaIds": {
             "minItems": 1,
             "uniqueItems": true,
@@ -4108,6 +4156,13 @@
       "Busqueda": {
         "type": "object",
         "properties": {
+          "tipo": {
+            "enum": [
+              "SISTEMA",
+              "IA"
+            ],
+            "type": "string"
+          },
           "id": {
             "type": "number"
           },
@@ -4144,6 +4199,7 @@
           }
         },
         "required": [
+          "tipo",
           "id",
           "usuario",
           "fechaBusqueda",
@@ -4168,6 +4224,10 @@
           "orden": {
             "type": "number"
           },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          },
           "calificacion": {
             "type": "number",
             "nullable": true
@@ -4187,6 +4247,7 @@
           "busqueda",
           "juego",
           "orden",
+          "motivo",
           "calificacion",
           "comentario",
           "fechaCalificacion"

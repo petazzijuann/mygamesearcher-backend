@@ -1,3 +1,4 @@
+import { GroqService } from './groq.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Busqueda } from '../busqueda/busqueda.entity';
@@ -25,6 +26,6 @@ import { RecomendacionService } from './recomendacion.service';
     ]),
   ],
   controllers: [RecomendacionController],
-  providers: [RecomendacionService],
+  providers: [RecomendacionService, GroqService],
 })
 export class RecomendacionModule {}

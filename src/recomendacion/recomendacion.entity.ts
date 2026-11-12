@@ -34,6 +34,9 @@ export class Recomendacion {
   @Column({ type: 'smallint' })
   orden: number;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  motivo: string | null;
+
   // Se completan cuando el usuario califica la recomendación
   @Column({ type: 'smallint', nullable: true })
   calificacion: number | null;

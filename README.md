@@ -140,3 +140,9 @@ Cada módulo sigue la misma arquitectura por capas: **entity** (tabla en la base
 ## Bitácora
 
 El detalle de cada paso del desarrollo (qué se hizo, cómo, por qué y cómo probarlo) está en [docs/bitacora.md](./docs/bitacora.md).
+
+## Recomendaciones con IA (Groq)
+
+La pantalla Recomendame permite elegir SISTEMA (predeterminado) o IA conservando los filtros. El backend recibe `tipo` en `POST /recomendaciones` y guarda modalidad y explicaciones en el historial.
+
+Configurar `GROQ_API_KEY` y `GROQ_MODEL=openai/gpt-oss-20b` solo en el backend. Antes de desplegar en producción, aplicar el script aditivo indicado en la [guía de integración y pruebas](docs/recomendaciones-ia.md).

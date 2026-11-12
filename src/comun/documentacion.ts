@@ -24,9 +24,13 @@ export class ErrorRespuestaDto {
   error: string;
 }
 
-export type CodigoError = 400 | 401 | 403 | 404 | 409;
+export type CodigoError = 400 | 401 | 403 | 404 | 409 | 429 | 502 | 503 | 504;
 
 const DESCRIPCIONES: Record<CodigoError, string> = {
+  429: 'Límite de solicitudes de IA alcanzado',
+  502: 'Respuesta de IA inválida o incompleta',
+  503: 'IA no disponible o configuración inválida',
+  504: 'Tiempo de espera de IA agotado',
   400: 'Datos inválidos: el mensaje indica qué campo falló, un id de la URL que no es un número, o un id del body que no existe',
   401: 'Sin sesión: falta el token, es inválido o está vencido',
   403: 'Sin permiso: la acción es solo para ADMIN o el recurso es de otro usuario',

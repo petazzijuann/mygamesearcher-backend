@@ -30,10 +30,10 @@ export class RecomendacionController {
   // CUU Generar recomendación personalizada
   @ApiOperation({
     summary:
-      'CUU Generar recomendación: de 1 a 3 juegos según los criterios, sin los YA_JUGADO (usuario con sesión)',
+      'CUU Generar recomendación SISTEMA (por defecto) o IA: de 1 a 3 juegos sin los YA_JUGADO (usuario con sesión)',
   })
   @Post()
-  @ApiErrores(400, 401, 404)
+  @ApiErrores(400, 401, 404, 429, 502, 503, 504)
   generar(
     @Body() dto: GenerarRecomendacionDto,
     @UsuarioActual() usuarioActual: UsuarioToken,

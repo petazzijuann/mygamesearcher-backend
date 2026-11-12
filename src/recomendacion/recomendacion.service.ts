@@ -19,6 +19,8 @@ import { Usuario } from '../usuario/usuario.entity';
 import { CalificarRecomendacionDto } from './dto/calificar-recomendacion.dto';
 import { FiltroHistorialDto } from './dto/filtro-historial.dto';
 import { GenerarRecomendacionDto } from './dto/generar-recomendacion.dto';
+import { GroqService } from './groq.service';
+import { TipoRecomendacion } from './tipo-recomendacion.enum';
 import { elegirRecomendados } from './elegir-recomendados';
 import { Recomendacion } from './recomendacion.entity';
 
@@ -37,6 +39,7 @@ const RELACIONES_JUEGO = {
 @Injectable()
 export class RecomendacionService {
   constructor(
+    private readonly groqService: GroqService,
     @InjectRepository(Busqueda)
     private readonly busquedaRepository: Repository<Busqueda>,
     @InjectRepository(Recomendacion)
@@ -60,6 +63,7 @@ export class RecomendacionService {
   ): Promise<Busqueda> {
     const usuarioId = usuarioActual.id;
     const { plataformaIds, generoIds } = dto;
+    const tipo = dto.tipo ?? TipoRecomendacion.SISTEMA;
     const caracteristicaIds = dto.caracteristicaIds ?? [];
 
     // 1. Validar el usuario y los datos del body
@@ -88,14 +92,19 @@ export class RecomendacionService {
     const candidatos = await this.buscarCandidatos(
       usuarioId,
       plataformaIds,
-      generoIds,
+      tipo === TipoRecomendacion.IA ? [] : generoIds,
     );
     // El puntaje y el orden están en elegir-recomendados.ts (función pura, con tests unitarios)
-    const elegidos = elegirRecomendados(
-      candidatos,
-      generoIds,
-      caracteristicaIds,
-    );
+    const elegidos: { juego: Juego; motivo: string | null }[] =
+      tipo === TipoRecomendacion.IA
+        ? await this.groqService.recomendar(candidatos, {
+            plataformas,
+            generos,
+            caracteristicas,
+          })
+        : elegirRecomendados(candidatos, generoIds, caracteristicaIds).map(
+            (juego) => ({ juego, motivo: null }),
+          );
 
     // 5. Sin candidatos no se guarda nada (cada búsqueda tiene de 1 a 3 recomendaciones)
     if (elegidos.length === 0) {
@@ -110,8 +119,10 @@ export class RecomendacionService {
       plataformas,
       generos,
       caracteristicas,
-      recomendaciones: elegidos.map((juego, indice) => ({
+      tipo,
+      recomendaciones: elegidos.map(({ juego, motivo }, indice) => ({
         juego,
+        motivo,
         orden: indice + 1,
       })),
     });
@@ -252,7 +263,7 @@ export class RecomendacionService {
     plataformaIds: number[],
     generoIds: number[],
   ): Promise<Juego[]> {
-    const filas = await this.juegoRepository
+    const consulta = this.juegoRepository
       .createQueryBuilder('juego')
       .select('juego.id', 'id')
       .distinct(true)
@@ -262,9 +273,7 @@ export class RecomendacionService {
         'plataforma.id IN (:...plataformaIds)',
         { plataformaIds },
       )
-      .innerJoin('juego.generos', 'genero', 'genero.id IN (:...generoIds)', {
-        generoIds,
-      })
+
       .where(
         `NOT EXISTS (
           SELECT 1 FROM juego_guardado jg
@@ -273,8 +282,16 @@ export class RecomendacionService {
             AND jg.estado = :yaJugado
         )`,
         { usuarioId, yaJugado: EstadoJuego.YA_JUGADO },
-      )
-      .getRawMany<{ id: number }>();
+      );
+    if (generoIds.length) {
+      consulta.innerJoin(
+        'juego.generos',
+        'genero',
+        'genero.id IN (:...generoIds)',
+        { generoIds },
+      );
+    }
+    const filas = await consulta.getRawMany<{ id: number }>();
 
     if (filas.length === 0) {
       return [];

@@ -1,4 +1,5 @@
 import {
+  Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
@@ -12,11 +13,15 @@ import { Caracteristica } from '../caracteristica/caracteristica.entity';
 import { Genero } from '../genero/genero.entity';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { Recomendacion } from '../recomendacion/recomendacion.entity';
+import { TipoRecomendacion } from '../recomendacion/tipo-recomendacion.enum';
 import { Usuario } from '../usuario/usuario.entity';
 
 // Criterios que eligió el usuario al pedir una recomendación
 @Entity('busqueda')
 export class Busqueda {
+  @Column({ type: 'varchar', length: 7, default: TipoRecomendacion.SISTEMA })
+  tipo: TipoRecomendacion;
+
   @PrimaryGeneratedColumn()
   id: number;
 

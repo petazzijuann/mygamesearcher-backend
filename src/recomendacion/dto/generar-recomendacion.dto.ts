@@ -1,9 +1,12 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { TipoRecomendacion } from '../tipo-recomendacion.enum';
 import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
   IsDefined,
   IsInt,
+  IsEnum,
   IsOptional,
 } from 'class-validator';
 
@@ -11,6 +14,14 @@ import {
 // class-validator ejecuta los decoradores de abajo hacia arriba,
 // por eso en cada campo la validación más básica va última
 export class GenerarRecomendacionDto {
+  @ApiPropertyOptional({
+    enum: TipoRecomendacion,
+    default: TipoRecomendacion.SISTEMA,
+  })
+  @IsOptional()
+  @IsEnum(TipoRecomendacion, { message: 'El tipo debe ser SISTEMA o IA' })
+  tipo?: TipoRecomendacion;
+
   @IsInt({
     each: true,
     message: 'Cada id de plataforma debe ser un número entero',
@@ -21,7 +32,10 @@ export class GenerarRecomendacionDto {
   @IsDefined({ message: 'Debe elegir al menos una plataforma' })
   plataformaIds: number[];
 
-  @IsInt({ each: true, message: 'Cada id de género debe ser un número entero' })
+  @IsInt({
+    each: true,
+    message: 'Cada id de género debe ser un número entero',
+  })
   @ArrayUnique({ message: 'Los géneros no pueden repetirse' })
   @ArrayNotEmpty({ message: 'Debe elegir al menos un género' })
   @IsArray({ message: 'Los géneros deben ser una lista de ids' })
