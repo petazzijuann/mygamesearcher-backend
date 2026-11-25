@@ -1438,6 +1438,29 @@
               "maxLength": 100,
               "type": "string"
             }
+          },
+          {
+            "name": "pagina",
+            "required": false,
+            "in": "query",
+            "description": "Número de página, empieza en 1",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "description": "Cantidad de juegos por página (máximo 100)",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -1446,10 +1469,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Juego"
-                  }
+                  "$ref": "#/components/schemas/JuegosPaginadosDto"
                 }
               }
             }
@@ -1470,7 +1490,7 @@
             "bearer": []
           }
         ],
-        "summary": "Listar juegos, con filtro opcional por título (público)",
+        "summary": "Listar juegos paginados, con filtro opcional por título (público). Por defecto devuelve la página 1 con 20 juegos; limite admite hasta 100",
         "tags": [
           "Juegos"
         ]
@@ -3765,6 +3785,41 @@
           "plataformas",
           "generos",
           "caracteristicas"
+        ]
+      },
+      "JuegosPaginadosDto": {
+        "type": "object",
+        "properties": {
+          "datos": {
+            "description": "Juegos de la página pedida, ordenados por título",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Juego"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Cantidad total de juegos que cumplen el filtro (en todas las páginas)"
+          },
+          "pagina": {
+            "type": "number",
+            "description": "Página devuelta, empieza en 1"
+          },
+          "limite": {
+            "type": "number",
+            "description": "Cantidad máxima de juegos por página"
+          },
+          "totalPaginas": {
+            "type": "number",
+            "description": "Cantidad de páginas; 0 si no hay juegos"
+          }
+        },
+        "required": [
+          "datos",
+          "total",
+          "pagina",
+          "limite",
+          "totalPaginas"
         ]
       },
       "ActualizarJuegoDto": {

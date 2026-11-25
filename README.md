@@ -124,7 +124,7 @@ src/
   comun/                  -> piezas compartidas (validación global, filtro de errores, Swagger, pipes)
   auth/                   -> login, JWT, guards y decoradores de acceso
   genero/ plataforma/ caracteristica/ clasificacion-edad/   -> catálogos (CRUD simples)
-  juego/                  -> CRUD de juegos y listado con filtro por título
+  juego/                  -> CRUD de juegos y listado paginado con filtro por título
   usuario/                -> registro y CRUD de usuarios
   coleccion/              -> CRUD de colecciones y CUU Administrar colección
   juego-guardado/         -> CUU Administrar biblioteca personal (/biblioteca)

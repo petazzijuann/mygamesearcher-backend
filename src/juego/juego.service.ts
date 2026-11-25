@@ -13,6 +13,8 @@ import { Genero } from '../genero/genero.entity';
 import { Plataforma } from '../plataforma/plataforma.entity';
 import { ActualizarJuegoDto } from './dto/actualizar-juego.dto';
 import { CrearJuegoDto } from './dto/crear-juego.dto';
+import { FiltroJuegosDto, LIMITE_POR_DEFECTO } from './dto/filtro-juegos.dto';
+import { JuegosPaginadosDto } from './dto/juegos-paginados.dto';
 import { Juego } from './juego.entity';
 
 // Relaciones que se devuelven siempre junto con el juego
@@ -73,13 +75,28 @@ export class JuegoService {
     return this.juegoRepository.save(juego);
   }
 
-  // Con titulo, busca juegos que lo contengan en cualquier parte, sin distinguir mayúsculas
-  listar(titulo?: string): Promise<Juego[]> {
-    return this.juegoRepository.find({
+  // Devuelve una página de juegos. Con titulo, busca juegos que lo contengan en cualquier parte,
+  // sin distinguir mayúsculas. Sin pagina ni limite usa los valores por defecto del DTO (1 y 20)
+  async listar({
+    titulo,
+    pagina = 1,
+    limite = LIMITE_POR_DEFECTO,
+  }: FiltroJuegosDto): Promise<JuegosPaginadosDto> {
+    const [datos, total] = await this.juegoRepository.findAndCount({
       where: titulo ? { titulo: ILike(`%${escaparComodines(titulo)}%`) } : {},
       relations: RELACIONES,
-      order: { titulo: 'ASC' },
+      // El id desempata títulos iguales, así ningún juego se repite ni se saltea entre páginas
+      order: { titulo: 'ASC', id: 'ASC' },
+      skip: (pagina - 1) * limite,
+      take: limite,
     });
+    return {
+      datos,
+      total,
+      pagina,
+      limite,
+      totalPaginas: Math.ceil(total / limite),
+    };
   }
 
   async buscarPorId(id: number): Promise<Juego> {

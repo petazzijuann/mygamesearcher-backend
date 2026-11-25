@@ -1033,3 +1033,35 @@
 | `POST /biblioteca` `{"juegoId": 1, "estado": "ME_INTERESA"}` | `201` con el juego completo |
 | `PATCH /biblioteca/1` `{"estado": "YA_JUGADO"}` | `200` con el juego completo |
 | `npm run test` | 18 tests pasan (los 15 anteriores y los 3 de `juego-guardado.service.spec.ts`) |
+
+## Paso 23 - Paginado del listado de juegos (2026-11-25)
+
+**Qué se hizo:** `GET /juegos` dejó de devolver todos los juegos de una vez (1061 en la base desplegada) y pasó a devolverlos paginados. Sin parámetros devuelve la página 1 con 20 juegos (paginado por defecto), y el frontend puede pedir otra página y otro tamaño (paginado a demanda) con `?pagina=` y `?limite=`. Responde a la corrección del profesor.
+
+**Cómo se hizo:**
+- `src/juego/dto/filtro-juegos.dto.ts`: se agregaron `pagina` (entero, desde 1, por defecto 1) y `limite` (entero de 1 a 100, por defecto 20), convertidos de texto a número con `@Type(() => Number)`.
+- `src/juego/dto/juegos-paginados.dto.ts` (nuevo): forma de la respuesta, `{ datos, total, pagina, limite, totalPaginas }`.
+- `src/juego/juego.service.ts`: `listar` usa `findAndCount` con `skip` y `take`, y ordena por `titulo` y `id`.
+- `src/juego/juego.controller.ts`: pasa el filtro completo al service y documenta la respuesta con `@ApiOkResponse`.
+- `src/juego/juego.service.spec.ts` (nuevo): tests del paginado y de la validación de `pagina` y `limite`.
+- `docs/openapi.json` regenerado con `npm run docs:openapi`.
+
+**Por qué:**
+- Paginado por número de página (`skip`/`take`) y no por cursor: permite saltar a cualquier página y mostrar el total, que es lo que necesita un paginador numerado, y para este volumen de datos alcanza.
+- El tope de 100 por página evita que alguien vuelva a pedir el catálogo entero con `?limite=1061`.
+- El `id` desempata títulos iguales: sin un orden total, la base podría repetir o saltear juegos entre páginas.
+- Se cambió la respuesta de un array a un objeto para que el frontend reciba el total y la cantidad de páginas en el mismo JSON. Se descartó mandar el total en un header (`X-Total-Count`) porque es menos claro y más difícil de documentar. Es un cambio de contrato: el frontend se adaptó en el mismo paso.
+- Una página fuera de rango devuelve `datos` vacío (no es un error), con el `total` real para que el frontend pueda volver a una página válida.
+
+**Requisito del TP que cubre:** Corrección de la entrega final (buenas prácticas en el listado de juegos).
+
+**Cómo probarlo:**
+
+| Request | Respuesta esperada |
+|---|---|
+| `GET /juegos` | `200` con 20 juegos en `datos`, `pagina: 1`, `limite: 20` y el `total` |
+| `GET /juegos?pagina=2&limite=10` | `200` con los juegos 11 a 20 por título |
+| `GET /juegos?titulo=zelda&pagina=1` | `200` solo con los juegos que contienen "zelda" y su `total` |
+| `GET /juegos?limite=1061` | `400` `"El límite no puede superar los 100 juegos por página"` |
+| `GET /juegos?pagina=0` | `400` `"La página debe ser 1 o mayor"` |
+| `npm run test` | 49 tests pasan (los 42 anteriores y los 7 de `juego.service.spec.ts`) |

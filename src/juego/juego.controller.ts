@@ -11,7 +11,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiErrores } from '../comun/documentacion';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Publico } from '../auth/decoradores/publico.decorator';
 import { Roles } from '../auth/decoradores/roles.decorator';
 import { idPipe } from '../comun/id.pipe';
@@ -19,6 +24,7 @@ import { Rol } from '../usuario/rol.enum';
 import { ActualizarJuegoDto } from './dto/actualizar-juego.dto';
 import { CrearJuegoDto } from './dto/crear-juego.dto';
 import { FiltroJuegosDto } from './dto/filtro-juegos.dto';
+import { JuegosPaginadosDto } from './dto/juegos-paginados.dto';
 import { JuegoService } from './juego.service';
 
 @ApiTags('Juegos')
@@ -39,13 +45,15 @@ export class JuegoController {
   }
 
   @ApiOperation({
-    summary: 'Listar juegos, con filtro opcional por título (público)',
+    summary:
+      'Listar juegos paginados, con filtro opcional por título (público). Por defecto devuelve la página 1 con 20 juegos; limite admite hasta 100',
   })
   @Publico()
   @Get()
+  @ApiOkResponse({ type: JuegosPaginadosDto })
   @ApiErrores(400)
   listar(@Query() filtro: FiltroJuegosDto) {
-    return this.juegoService.listar(filtro.titulo);
+    return this.juegoService.listar(filtro);
   }
 
   @ApiOperation({ summary: 'Ver el detalle de un juego (público)' })
